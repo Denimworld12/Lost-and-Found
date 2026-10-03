@@ -15,6 +15,7 @@
     "deploy:sepolia": "hardhat ignition deploy ignition/modules/LostAndFound.ts --network sepolia --parameters ignition/parameters/sepolia.json --deployment-id sepolia-v1 --verify",
     "deploy:staging": "hardhat ignition deploy ignition/modules/LostAndFound.ts --network sepolia --parameters ignition/parameters/sepolia.json --deployment-id sepolia-staging-v1 --verify",
     "setup-roles:sepolia": "hardhat run scripts/setup-roles.ts --network sepolia",
+    "smoke:sepolia": "hardhat run scripts/smoke-sepolia.ts",
     "export-abi": "hardhat run scripts/export-abi.ts",
     "typecheck": "hardhat build --quiet && tsc --noEmit",
     "clean": "hardhat clean",

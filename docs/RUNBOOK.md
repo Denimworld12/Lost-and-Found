@@ -15,14 +15,16 @@ Both contracts are verified on Etherscan, Blockscout and Sourcify, with config 0
 
 ### Sepolia accounts
 
-| Role     | Address                                      | Key                                                                |
-| -------- | -------------------------------------------- | ------------------------------------------------------------------ |
-| Deployer | `0xc8f5ac25786c12be9b2ab05afee522c359801829` | `SEPOLIA_PRIVATE_KEY` (captain's MetaMask Deployer); holds no role |
-| Admin    | `0x0217C435A8C4a104E641CFA438E582716c862d9B` | `ADMIN_PRIVATE_KEY`                                                |
-| Verifier | `0x45933417B883B3ecb5eDB185c2a73823F3313016` | `VERIFIER_PRIVATE_KEY` (server wallet for `verifyStudent`)         |
-| Arbiter  | `0x9FF4CD7D8DaF39334b469D7C009e5BC4830B6947` | `ARBITER_PRIVATE_KEY`                                              |
+| Role      | Address                                      | Key                                                                |
+| --------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| Deployer  | `0xc8f5ac25786c12be9b2ab05afee522c359801829` | `SEPOLIA_PRIVATE_KEY` (captain's MetaMask Deployer); holds no role |
+| Admin     | `0x0217C435A8C4a104E641CFA438E582716c862d9B` | `ADMIN_PRIVATE_KEY`                                                |
+| Verifier  | `0x45933417B883B3ecb5eDB185c2a73823F3313016` | `VERIFIER_PRIVATE_KEY` (server wallet for `verifyStudent`)         |
+| Arbiter   | `0x9FF4CD7D8DaF39334b469D7C009e5BC4830B6947` | `ARBITER_PRIVATE_KEY`                                              |
+| Student A | `0xc3094e09bb56e350bcdd9039ae2ce3e73d3900cf` | `STUDENT_A_PRIVATE_KEY` (test student, verified on `sepolia-v1`)   |
+| Student B | `0x3ba2113c559f36040366477d26e286ffae8928a1` | `STUDENT_B_PRIVATE_KEY` (test student, verified on `sepolia-v1`)   |
 
-Admin, verifier and arbiter were generated for this project; their keys exist only in the Hardhat
+Admin, verifier, arbiter and the two test students were generated for this project; their keys exist only in the Hardhat
 **development** keystore on the machine that deployed (`pnpm hardhat keystore path --dev`). Back that
 file and its password file up. Losing `ADMIN_PRIVATE_KEY` loses pause, config and role management for
 both contracts. Each of these wallets needs Sepolia ETH before it can send transactions.
@@ -96,3 +98,27 @@ pnpm export-abi                        # commit packages/shared and ignition/dep
 - Verification failed (Etherscan lags)? `pnpm hardhat ignition verify sepolia-v1`.
 - Contract changed? Use a new deployment id (`sepolia-v2`), pause the old contract, update addresses and the subgraph.
 - Record the address, deploy transaction and block in the table at the top.
+
+### Smoke test (post → claim → confirm → withdraw)
+
+```bash
+cd contracts
+pnpm smoke:sepolia    # IGNITION_DEPLOYMENT_ID=sepolia-staging-v1 for staging
+```
+
+Tops up the verifier and Student A/B from the Deployer, verifies both students, then Student A posts an
+item with the minimum reward, Student B claims it, Student A confirms and Student B withdraws reward + stake.
+Each call is simulated before it is sent. Every run posts a new item.
+
+First run on `sepolia-v1` (item #1, blocks 11836911–11836918):
+
+| Step                                  | Transaction                                                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Fund verifier 0.002 ETH               | [`0x71fe976f…018806`](https://sepolia.etherscan.io/tx/0x71fe976f8da623e594752b4385b6e916f29200a09a53b8ed870bf3056e018806) |
+| Fund Student A 0.004 ETH              | [`0xf20254ae…b8e9fd`](https://sepolia.etherscan.io/tx/0xf20254ae42673ac4ed3e4a798653d9a53b0b6e2043a8f5b7dd89bcb5abb8e9fd) |
+| Fund Student B 0.003 ETH              | [`0xb72d31ac…f5264a`](https://sepolia.etherscan.io/tx/0xb72d31acc4a4f911ce178a13d6e9739f2c5460b1d5e685900a9bd20d76f5264a) |
+| Verifier `verifyStudents([A, B])`     | [`0x0a2436d5…165397`](https://sepolia.etherscan.io/tx/0x0a2436d5da81a3de4f6a56a9e06b7b7707330acdefa2c10fe74f338048165397) |
+| Student A `postItem` (0.001 ETH)      | [`0x8b145b39…fdec61`](https://sepolia.etherscan.io/tx/0x8b145b39d914fa55e0261d5f0ee3322bbe02f9b4a50ed60ac629b7d6f7fdec61) |
+| Student B `claimItem(1)` (0.0005 ETH) | [`0x21231b73…bb0ad7`](https://sepolia.etherscan.io/tx/0x21231b73da76e79b633fa302ab8d1e86e5a6b1beff24fcb9635ccec9e9bb0ad7) |
+| Student A `confirmReturn(1)`          | [`0xe050981b…eff8a0`](https://sepolia.etherscan.io/tx/0xe050981b61061209563a9747dbf0dde59c1b0b30f8816ff9267a45bf67eff8a0) |
+| Student B `withdraw` (0.0015 ETH)     | [`0x42eda536…02a6a4`](https://sepolia.etherscan.io/tx/0x42eda5364b699faf2a699d3fbbde5858ade30bcbdb4a3551e5849ca1ac02a6a4) |
