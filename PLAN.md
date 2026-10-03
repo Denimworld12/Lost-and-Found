@@ -62,18 +62,18 @@ Never paste private keys into chat with Claude Code. Enter them only through `np
 
 ## Phase 1 — Monorepo scaffold
 
-- [ ] `git init`, add `.gitignore` (node_modules, .next, .env*, !.env.example, coverage, artifacts, cache, typechain, subgraph/build, subgraph/generated, .vercel)
-- [ ] Root `package.json` with `"private": true`, `packageManager` pinned, scripts: `check`, `lint`, `typecheck`, `test`, `format`
-- [ ] `pnpm-workspace.yaml` listing `contracts`, `subgraph`, `apps/*`, `packages/*`
-- [ ] `.nvmrc` = `22`, `.editorconfig`, Prettier config (+ `prettier-plugin-solidity`, `prettier-plugin-tailwindcss`)
-- [ ] Contracts project: `mkdir contracts && cd contracts && npx hardhat --init` → choose the TypeScript + viem + node:test template. Make sure `"type": "module"`
-- [ ] Web app: `pnpm create next-app@latest apps/web --ts --tailwind --eslint --app --src-dir --import-alias "@/*"`
-- [ ] `packages/shared` with `package.json` (`name: @clf/shared`), `src/index.ts`, `tsconfig.json`
-- [ ] `subgraph/` placeholder (filled in Phase 5)
-- [ ] `docs/` with `DECISIONS.md`, `RUNBOOK.md`, `UI_SPEC.md`
-- [ ] `.env.example` with every variable from the "Environment variables" table at the end of this file
-- [ ] `.github/workflows/ci.yml` skeleton: checkout → pnpm setup → Node 22 → `pnpm install --frozen-lockfile` → `pnpm check`
-- [ ] Husky + lint-staged: format and lint staged files on commit
+- [x] `git init`, add `.gitignore` (node_modules, .next, .env*, !.env.example, coverage, artifacts, cache, typechain, subgraph/build, subgraph/generated, .vercel)
+- [x] Root `package.json` with `"private": true`, `packageManager` pinned, scripts: `check`, `lint`, `typecheck`, `test`, `format`
+- [x] `pnpm-workspace.yaml` listing `contracts`, `subgraph`, `apps/*`, `packages/*`
+- [x] `.nvmrc` = `22`, `.editorconfig`, Prettier config (+ `prettier-plugin-solidity`, `prettier-plugin-tailwindcss`)
+- [x] Contracts project: `mkdir contracts && cd contracts && npx hardhat --init` → choose the TypeScript + viem + node:test template. Make sure `"type": "module"`
+- [x] Web app: `pnpm create next-app@latest apps/web --ts --tailwind --eslint --app --src-dir --import-alias "@/*"`
+- [x] `packages/shared` with `package.json` (`name: @clf/shared`), `src/index.ts`, `tsconfig.json`
+- [x] `subgraph/` placeholder (filled in Phase 5)
+- [x] `docs/` with `DECISIONS.md`, `RUNBOOK.md`, `UI_SPEC.md`
+- [x] `.env.example` with every variable from the "Environment variables" table at the end of this file
+- [x] `.github/workflows/ci.yml` skeleton: checkout → pnpm setup → Node 22 → `pnpm install --frozen-lockfile` → `pnpm check`
+- [x] Husky + lint-staged: format and lint staged files on commit
 
 **Done when:** `pnpm install && pnpm check` passes on a clean clone; first commit pushed; CI green.
 
@@ -93,8 +93,9 @@ struct Item {
     address owner;        // slot 1 (20 bytes) + status (1) + createdAt (8) pack together
     Status  status;
     uint64  createdAt;
-    address finder;       // slot 2 + claimedAt (8)
+    address finder;       // slot 2 + claimedAt (8) + claimWindow (4)
     uint64  claimedAt;
+    uint32  claimWindow;  // confirmWindow locked at claim time
     uint128 reward;       // slot 3: reward + stake pack together
     uint128 stake;        // stake locked at claim time
     string  metadataCID;  // IPFS CID of the metadata JSON (max 100 bytes)
@@ -124,9 +125,9 @@ Roles: `DEFAULT_ADMIN_ROLE`, `VERIFIER_ROLE`, `ARBITER_ROLE` (bytes32 constants)
 | Function | Access | Requires | Effects | Event |
 | --- | --- | --- | --- | --- |
 | `postItem(string cid) payable` | verified, not paused | `msg.value >= minReward`, `msg.value <= type(uint128).max`, `1 <= bytes(cid).length <= 100` | new item Open; `totalEscrowed += value` | `ItemPosted(id, owner, reward, cid)` |
-| `claimItem(uint256 id) payable` | verified, not paused | status Open, caller ≠ owner, `msg.value == claimStake` | finder, stake, claimedAt set; status Claimed; `totalEscrowed += value` | `ItemClaimed(id, finder, stake)` |
+| `claimItem(uint256 id) payable` | verified, not paused | status Open, caller ≠ owner, `msg.value == claimStake` | finder, stake, claimedAt, claimWindow set; status Claimed; `totalEscrowed += value` | `ItemClaimed(id, finder, stake)` |
 | `confirmReturn(uint256 id)` | owner | status Claimed | status Completed; credit finder reward + stake | `ReturnConfirmed(id, finder, amount)` |
-| `rejectClaim(uint256 id)` | owner | status Claimed, within window | credit owner the stake; clear finder/stake/claimedAt; status Open | `ClaimRejected(id, finder, stakeToOwner)` |
+| `rejectClaim(uint256 id)` | owner | status Claimed, within window | credit owner the stake; clear finder/stake/claimedAt/claimWindow; status Open | `ClaimRejected(id, finder, stakeToOwner)` |
 | `raiseDispute(uint256 id)` | owner or finder | status Claimed, within window | status Disputed | `DisputeRaised(id, by)` |
 | `claimAfterTimeout(uint256 id)` | finder | status Claimed, window passed | status Completed; credit finder reward + stake | `TimeoutClaimed(id, finder, amount)` |
 | `resolveDispute(uint256 id, bool finderWins)` | arbiter | status Disputed | finderWins: Completed, credit finder reward + stake. Else: credit owner stake, reopen item as Open | `DisputeResolved(id, finderWins, arbiter)` |
@@ -134,12 +135,12 @@ Roles: `DEFAULT_ADMIN_ROLE`, `VERIFIER_ROLE`, `ARBITER_ROLE` (bytes32 constants)
 | `withdraw()` | anyone | `balances[msg.sender] > 0` | zero balance, then send with `call`; revert if send fails | `Withdrawn(to, amount)` |
 | `verifyStudent(address s)` / `verifyStudents(address[] s)` | verifier | `s != address(0)` | `isVerified = true` | `StudentVerified(s)` |
 | `revokeStudent(address s)` | verifier | — | `isVerified = false` (existing items still finish) | `StudentRevoked(s)` |
-| `setConfig(uint256 minReward, uint256 claimStake, uint64 confirmWindow)` | admin | bounds checked | updates config | `ConfigUpdated(...)` |
+| `setConfig(uint256 minReward, uint256 claimStake, uint64 confirmWindow)` | admin | bounds checked | updates config (new claims only) | `ConfigUpdated(...)` |
 | `pause()` / `unpause()` | admin | — | blocks `postItem` and `claimItem` only | OZ `Paused` / `Unpaused` |
 | `getItem(uint256 id) view returns (Item)` | anyone | item exists | — | — |
-| `withinWindow(uint256 id) view returns (bool)` | anyone | — | `block.timestamp <= claimedAt + confirmWindow` | — |
+| `withinWindow(uint256 id) view returns (bool)` | anyone | — | `block.timestamp <= claimedAt + claimWindow` | — |
 
-"Within window" means `block.timestamp <= claimedAt + confirmWindow`; "window passed" means strictly greater.
+"Within window" means `block.timestamp <= claimedAt + claimWindow` (the item's window, locked at claim time); "window passed" means strictly greater.
 Every credit updates `totalEscrowed -= x; totalCredited += x`. `withdraw` does `totalCredited -= amount`.
 
 ### Custom errors
@@ -167,33 +168,33 @@ Every credit updates `totalEscrowed -= x; totalCredited += x`. `withdraw` does `
 
 Use Hardhat's network helpers to move time (`networkHelpers.time.increase`). Cover at least:
 
-- [ ] Deployment: roles assigned, config set, zero-address and bad-config reverts
-- [ ] Verification: only verifier can verify/revoke; batch verify; events
-- [ ] `postItem`: unverified reverts; paused reverts; reward too low; empty and 101-byte CID; ID increments; escrow totals; event args
-- [ ] `claimItem`: wrong status; owner claiming own item; wrong stake; paused; event
-- [ ] `confirmReturn`: only owner; only Claimed; finder credited reward + stake
-- [ ] `rejectClaim`: only owner; window closed reverts; stake to owner; item back to Open with finder cleared; a second finder can then claim
-- [ ] `raiseDispute`: owner and finder allowed, others revert; window closed reverts
-- [ ] `claimAfterTimeout`: before window reverts (`WindowOpen`); exactly at boundary still reverts; after passes
-- [ ] `resolveDispute`: only arbiter; both outcomes; owner-wins reopens item
-- [ ] `cancelItem`: only Open; reward credited to owner
-- [ ] `withdraw`: zero balance reverts; balance zeroed before send; reentrancy attempt via a malicious receiver contract (`test/mocks/Reenter.sol`) fails
-- [ ] Config change after a claim does not change that item's stake
-- [ ] `receive`/`fallback` revert
-- [ ] Invariant check helper run after every test: `contract balance >= totalEscrowed + totalCredited`
+- [x] Deployment: roles assigned, config set, zero-address and bad-config reverts
+- [x] Verification: only verifier can verify/revoke; batch verify; events
+- [x] `postItem`: unverified reverts; paused reverts; reward too low; empty and 101-byte CID; ID increments; escrow totals; event args
+- [x] `claimItem`: wrong status; owner claiming own item; wrong stake; paused; event
+- [x] `confirmReturn`: only owner; only Claimed; finder credited reward + stake
+- [x] `rejectClaim`: only owner; window closed reverts; stake to owner; item back to Open with finder cleared; a second finder can then claim
+- [x] `raiseDispute`: owner and finder allowed, others revert; window closed reverts
+- [x] `claimAfterTimeout`: before window reverts (`WindowOpen`); exactly at boundary still reverts; after passes
+- [x] `resolveDispute`: only arbiter; both outcomes; owner-wins reopens item
+- [x] `cancelItem`: only Open; reward credited to owner
+- [x] `withdraw`: zero balance reverts; balance zeroed before send; reentrancy attempt via a malicious receiver contract (`test/mocks/Reenter.sol`) fails
+- [x] Config change after a claim does not change that item's stake
+- [x] `receive`/`fallback` revert
+- [x] Invariant check helper run after every test: `contract balance >= totalEscrowed + totalCredited`
 
 ### Solidity tests (`contracts/test-sol/`)
 
-- [ ] Fuzz `postItem` reward amounts and `claimItem` stake values
-- [ ] Fuzz the time offset for `claimAfterTimeout` around the window edge
-- [ ] Invariant: sum of balances equals `totalCredited`
+- [x] Fuzz `postItem` reward amounts and `claimItem` stake values
+- [x] Fuzz the time offset for `claimAfterTimeout` around the window edge
+- [x] Invariant: sum of balances equals `totalCredited`
 
 ### Tooling
 
-- [ ] Coverage script; target **100% lines and branches** for `LostAndFound.sol`
-- [ ] Gas report enabled in CI output
-- [ ] Slither: `pip install slither-analyzer` then `slither contracts/ --hardhat-ignore-compile` (compile first). Fix all High/Medium, document accepted Low/Informational in `docs/DECISIONS.md`
-- [ ] Add a CI job that runs Slither with `--fail-high`
+- [x] Coverage script; target **100% lines and branches** for `LostAndFound.sol`
+- [x] Gas report enabled in CI output
+- [x] Slither: `pip install slither-analyzer` then `slither contracts/ --hardhat-ignore-compile` (compile first). Fix all High/Medium, document accepted Low/Informational in `docs/DECISIONS.md`
+- [x] Add a CI job that runs Slither with `--fail-high`
 
 **Done when:** all tests pass, coverage 100% lines + branches, Slither has no High/Medium, gas report saved to `docs/report/gas.md`.
 
@@ -496,11 +497,11 @@ States: `idle → checking → awaitingWallet → pending → confirmed | failed
 - [ ] **Cancel** (owner, Open): `cancelItem`
 - [ ] **Withdraw** (`/me` and header balance chip): `withdraw`
 - [ ] **Contact reveal**: after a claim, owner and finder see "Contact {email}" via `/api/items/[id]/contact`
-- [ ] **Countdown** on Claimed items: time left in the confirm window, computed from `claimedAt + confirmWindow` vs the latest block timestamp (not the device clock)
+- [ ] **Countdown** on Claimed items: time left in the confirm window, computed from `claimedAt + claimWindow` vs the latest block timestamp (not the device clock)
 - [ ] **Live updates**: `useWatchContractEvent` on the item page for that item's events → invalidate queries
 - [ ] **/me dashboard**: tabs "Needs your action", "Items I lost", "Items I found", "History"; withdrawable balance card
 
-**Done when:** all flows pass manually on Sepolia with Student A and Student B, including reject → reclaim, dispute both outcomes, and timeout (admin sets `confirmWindow` to 5 minutes for the test, then restores it).
+**Done when:** all flows pass manually on Sepolia with Student A and Student B, including reject → reclaim, dispute both outcomes, and timeout (admin sets `confirmWindow` to 5 minutes before the claim is made, then restores it).
 
 ---
 

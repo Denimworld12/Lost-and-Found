@@ -1,0 +1,15 @@
+pnpm-lock.yaml
+node_modules
+.next
+coverage
+contracts/artifacts
+contracts/cache
+contracts/types
+contracts/ignition/deployments
+subgraph/build
+subgraph/generated
+packages/shared/src/abi.ts
+# Spec documents are authored by hand; keep their formatting as written.
+CLAUDE.md
+PLAN.md
+docs/UI_SPEC.md

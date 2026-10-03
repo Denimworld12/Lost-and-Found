@@ -1,0 +1,6 @@
+{
+  "name": "subgraph",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The Graph subgraph for LostAndFound (filled in Phase 5)"
+}
