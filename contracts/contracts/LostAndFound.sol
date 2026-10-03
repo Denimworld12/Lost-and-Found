@@ -114,8 +114,10 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
         _;
     }
 
+    /// @dev IDs are assigned 1..itemCount and items are never deleted, so this range check is
+    /// equivalent to `items[id].status != Status.None`.
     modifier itemExists(uint256 id) {
-        if (items[id].status == Status.None) revert ItemNotFound();
+        if (id == 0 || id > itemCount) revert ItemNotFound();
         _;
     }
 
