@@ -11,9 +11,8 @@ export const contractsDir = path.resolve(
 
 const FUTURE_ID = "LostAndFoundModule#LostAndFound";
 
-/** Ignition deployments that `export-abi` publishes to `packages/shared`. */
+/** Committed Ignition deployments that `export-abi` publishes to `packages/shared`. */
 export const KNOWN_DEPLOYMENTS = [
-  { name: "localhost", deploymentId: "chain-31337" },
   { name: "sepolia", deploymentId: "sepolia-v1" },
   { name: "sepoliaStaging", deploymentId: "sepolia-staging-v1" },
 ] as const;
@@ -31,6 +30,19 @@ export interface Deployment {
   deployTx: Hash;
   deployBlock: bigint;
 }
+
+/**
+ * The first deployment on a fresh local node always lands at the same address in block 1,
+ * so it is fixed here rather than read from the git-ignored local journal.
+ */
+export const LOCALHOST_DEPLOYMENT: Deployment = {
+  deploymentId: "chain-31337",
+  chainId: 31337,
+  address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  deployTx:
+    "0xbe8e7a9e9ae396d19fa3a725a15d1146f8941dec57928457762b5526f8e46c8b",
+  deployBlock: 1n,
+};
 
 interface JournalLine {
   type: string;

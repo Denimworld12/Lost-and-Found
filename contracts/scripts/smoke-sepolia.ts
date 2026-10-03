@@ -138,6 +138,9 @@ await confirm(
 );
 
 // 4. Student B claims it with the stake.
+const creditedBefore = await lostAndFound.read.balances([
+  studentB.account.address,
+]);
 const stake = await lostAndFound.read.claimStake();
 const claimed = await publicClient.simulateContract({
   address: deployment.address,
@@ -167,9 +170,9 @@ await confirm(
 
 // 6. Student B withdraws reward + stake.
 const credited = await lostAndFound.read.balances([studentB.account.address]);
-if (credited !== reward + stake) {
+if (credited - creditedBefore !== reward + stake) {
   throw new Error(
-    `Student B credited ${credited} wei, expected ${reward + stake}`,
+    `Student B credited ${credited - creditedBefore} wei, expected ${reward + stake}`,
   );
 }
 const withdrawn = await publicClient.simulateContract({
