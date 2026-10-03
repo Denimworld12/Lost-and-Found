@@ -167,33 +167,33 @@ Every credit updates `totalEscrowed -= x; totalCredited += x`. `withdraw` does `
 
 Use Hardhat's network helpers to move time (`networkHelpers.time.increase`). Cover at least:
 
-- [ ] Deployment: roles assigned, config set, zero-address and bad-config reverts
-- [ ] Verification: only verifier can verify/revoke; batch verify; events
-- [ ] `postItem`: unverified reverts; paused reverts; reward too low; empty and 101-byte CID; ID increments; escrow totals; event args
-- [ ] `claimItem`: wrong status; owner claiming own item; wrong stake; paused; event
-- [ ] `confirmReturn`: only owner; only Claimed; finder credited reward + stake
-- [ ] `rejectClaim`: only owner; window closed reverts; stake to owner; item back to Open with finder cleared; a second finder can then claim
-- [ ] `raiseDispute`: owner and finder allowed, others revert; window closed reverts
-- [ ] `claimAfterTimeout`: before window reverts (`WindowOpen`); exactly at boundary still reverts; after passes
-- [ ] `resolveDispute`: only arbiter; both outcomes; owner-wins reopens item
-- [ ] `cancelItem`: only Open; reward credited to owner
-- [ ] `withdraw`: zero balance reverts; balance zeroed before send; reentrancy attempt via a malicious receiver contract (`test/mocks/Reenter.sol`) fails
-- [ ] Config change after a claim does not change that item's stake
-- [ ] `receive`/`fallback` revert
-- [ ] Invariant check helper run after every test: `contract balance >= totalEscrowed + totalCredited`
+- [x] Deployment: roles assigned, config set, zero-address and bad-config reverts
+- [x] Verification: only verifier can verify/revoke; batch verify; events
+- [x] `postItem`: unverified reverts; paused reverts; reward too low; empty and 101-byte CID; ID increments; escrow totals; event args
+- [x] `claimItem`: wrong status; owner claiming own item; wrong stake; paused; event
+- [x] `confirmReturn`: only owner; only Claimed; finder credited reward + stake
+- [x] `rejectClaim`: only owner; window closed reverts; stake to owner; item back to Open with finder cleared; a second finder can then claim
+- [x] `raiseDispute`: owner and finder allowed, others revert; window closed reverts
+- [x] `claimAfterTimeout`: before window reverts (`WindowOpen`); exactly at boundary still reverts; after passes
+- [x] `resolveDispute`: only arbiter; both outcomes; owner-wins reopens item
+- [x] `cancelItem`: only Open; reward credited to owner
+- [x] `withdraw`: zero balance reverts; balance zeroed before send; reentrancy attempt via a malicious receiver contract (`test/mocks/Reenter.sol`) fails
+- [x] Config change after a claim does not change that item's stake
+- [x] `receive`/`fallback` revert
+- [x] Invariant check helper run after every test: `contract balance >= totalEscrowed + totalCredited`
 
 ### Solidity tests (`contracts/test-sol/`)
 
-- [ ] Fuzz `postItem` reward amounts and `claimItem` stake values
-- [ ] Fuzz the time offset for `claimAfterTimeout` around the window edge
-- [ ] Invariant: sum of balances equals `totalCredited`
+- [x] Fuzz `postItem` reward amounts and `claimItem` stake values
+- [x] Fuzz the time offset for `claimAfterTimeout` around the window edge
+- [x] Invariant: sum of balances equals `totalCredited`
 
 ### Tooling
 
-- [ ] Coverage script; target **100% lines and branches** for `LostAndFound.sol`
-- [ ] Gas report enabled in CI output
-- [ ] Slither: `pip install slither-analyzer` then `slither contracts/ --hardhat-ignore-compile` (compile first). Fix all High/Medium, document accepted Low/Informational in `docs/DECISIONS.md`
-- [ ] Add a CI job that runs Slither with `--fail-high`
+- [x] Coverage script; target **100% lines and branches** for `LostAndFound.sol`
+- [x] Gas report enabled in CI output
+- [x] Slither: `pip install slither-analyzer` then `slither contracts/ --hardhat-ignore-compile` (compile first). Fix all High/Medium, document accepted Low/Informational in `docs/DECISIONS.md`
+- [x] Add a CI job that runs Slither with `--fail-high`
 
 **Done when:** all tests pass, coverage 100% lines + branches, Slither has no High/Medium, gas report saved to `docs/report/gas.md`.
 
