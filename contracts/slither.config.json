@@ -1,0 +1,6 @@
+{
+  "solc_remaps": "@openzeppelin/=node_modules/@openzeppelin/",
+  "solc_args": "--optimize --optimize-runs 200 --allow-paths ..",
+  "filter_paths": "node_modules",
+  "exclude_dependencies": true
+}
