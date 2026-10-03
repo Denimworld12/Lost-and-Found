@@ -62,18 +62,18 @@ Never paste private keys into chat with Claude Code. Enter them only through `np
 
 ## Phase 1 — Monorepo scaffold
 
-- [ ] `git init`, add `.gitignore` (node_modules, .next, .env*, !.env.example, coverage, artifacts, cache, typechain, subgraph/build, subgraph/generated, .vercel)
-- [ ] Root `package.json` with `"private": true`, `packageManager` pinned, scripts: `check`, `lint`, `typecheck`, `test`, `format`
-- [ ] `pnpm-workspace.yaml` listing `contracts`, `subgraph`, `apps/*`, `packages/*`
-- [ ] `.nvmrc` = `22`, `.editorconfig`, Prettier config (+ `prettier-plugin-solidity`, `prettier-plugin-tailwindcss`)
-- [ ] Contracts project: `mkdir contracts && cd contracts && npx hardhat --init` → choose the TypeScript + viem + node:test template. Make sure `"type": "module"`
-- [ ] Web app: `pnpm create next-app@latest apps/web --ts --tailwind --eslint --app --src-dir --import-alias "@/*"`
-- [ ] `packages/shared` with `package.json` (`name: @clf/shared`), `src/index.ts`, `tsconfig.json`
-- [ ] `subgraph/` placeholder (filled in Phase 5)
-- [ ] `docs/` with `DECISIONS.md`, `RUNBOOK.md`, `UI_SPEC.md`
-- [ ] `.env.example` with every variable from the "Environment variables" table at the end of this file
-- [ ] `.github/workflows/ci.yml` skeleton: checkout → pnpm setup → Node 22 → `pnpm install --frozen-lockfile` → `pnpm check`
-- [ ] Husky + lint-staged: format and lint staged files on commit
+- [x] `git init`, add `.gitignore` (node_modules, .next, .env*, !.env.example, coverage, artifacts, cache, typechain, subgraph/build, subgraph/generated, .vercel)
+- [x] Root `package.json` with `"private": true`, `packageManager` pinned, scripts: `check`, `lint`, `typecheck`, `test`, `format`
+- [x] `pnpm-workspace.yaml` listing `contracts`, `subgraph`, `apps/*`, `packages/*`
+- [x] `.nvmrc` = `22`, `.editorconfig`, Prettier config (+ `prettier-plugin-solidity`, `prettier-plugin-tailwindcss`)
+- [x] Contracts project: `mkdir contracts && cd contracts && npx hardhat --init` → choose the TypeScript + viem + node:test template. Make sure `"type": "module"`
+- [x] Web app: `pnpm create next-app@latest apps/web --ts --tailwind --eslint --app --src-dir --import-alias "@/*"`
+- [x] `packages/shared` with `package.json` (`name: @clf/shared`), `src/index.ts`, `tsconfig.json`
+- [x] `subgraph/` placeholder (filled in Phase 5)
+- [x] `docs/` with `DECISIONS.md`, `RUNBOOK.md`, `UI_SPEC.md`
+- [x] `.env.example` with every variable from the "Environment variables" table at the end of this file
+- [x] `.github/workflows/ci.yml` skeleton: checkout → pnpm setup → Node 22 → `pnpm install --frozen-lockfile` → `pnpm check`
+- [x] Husky + lint-staged: format and lint staged files on commit
 
 **Done when:** `pnpm install && pnpm check` passes on a clean clone; first commit pushed; CI green.
 
