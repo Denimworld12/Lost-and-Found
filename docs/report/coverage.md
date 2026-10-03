@@ -8,9 +8,9 @@ fails unless every line of `LostAndFound.sol` is covered.
 
 | File                         | Lines          | Statements |
 | ---------------------------- | -------------- | ---------- |
-| `contracts/LostAndFound.sol` | 100% (139/139) | 100%       |
+| `contracts/LostAndFound.sol` | 100% (143/143) | 100%       |
 
-83 tests: 75 TypeScript (node:test + viem), 5 fuzz tests (1,024 runs each) and 3 invariants (256 runs, depth 64).
+86 tests: 77 TypeScript (node:test + viem), 6 fuzz tests (1,024 runs each) and 3 invariants (256 runs, depth 64).
 
 ## Branches
 
@@ -36,7 +36,7 @@ compound conditions has its own test. The table maps every branch to a test.
 | `cancelItem`                         | not owner, not Open, success, works while paused                                                                             | cancelItem › all cases                                                                                          |
 | `withdraw`                           | nothing to withdraw, success, receiver rejects ETH → `TransferFailed`, re-entry blocked by guard, balance zeroed before send | withdraw › all cases (uses `test/mocks/Reenter.sol`)                                                            |
 | `verifyStudent(s)` / `revokeStudent` | not verifier, zero address (single and in batch), success, empty batch                                                       | student verification › all cases                                                                                |
-| `setConfig` / `pause` / `unpause`    | not admin, success, events                                                                                                   | config and pause › all cases                                                                                    |
+| `setConfig` / `pause` / `unpause`    | not admin, success, events; window change after a claim (shorter and longer) leaves that claim's window unchanged            | config and pause › all cases; fuzz `testFuzz_ConfigChangeKeepsClaimWindow`                                      |
 | `withinWindow`                       | true through the edge, false after                                                                                           | views › withinWindow…; fuzz edge tests                                                                          |
 | `receive` / `fallback`               | plain ETH, unknown selector with and without ETH                                                                             | direct payments › all cases                                                                                     |
 

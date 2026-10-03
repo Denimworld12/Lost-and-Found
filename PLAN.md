@@ -93,8 +93,9 @@ struct Item {
     address owner;        // slot 1 (20 bytes) + status (1) + createdAt (8) pack together
     Status  status;
     uint64  createdAt;
-    address finder;       // slot 2 + claimedAt (8)
+    address finder;       // slot 2 + claimedAt (8) + claimWindow (4)
     uint64  claimedAt;
+    uint32  claimWindow;  // confirmWindow locked at claim time
     uint128 reward;       // slot 3: reward + stake pack together
     uint128 stake;        // stake locked at claim time
     string  metadataCID;  // IPFS CID of the metadata JSON (max 100 bytes)
@@ -124,9 +125,9 @@ Roles: `DEFAULT_ADMIN_ROLE`, `VERIFIER_ROLE`, `ARBITER_ROLE` (bytes32 constants)
 | Function | Access | Requires | Effects | Event |
 | --- | --- | --- | --- | --- |
 | `postItem(string cid) payable` | verified, not paused | `msg.value >= minReward`, `msg.value <= type(uint128).max`, `1 <= bytes(cid).length <= 100` | new item Open; `totalEscrowed += value` | `ItemPosted(id, owner, reward, cid)` |
-| `claimItem(uint256 id) payable` | verified, not paused | status Open, caller ≠ owner, `msg.value == claimStake` | finder, stake, claimedAt set; status Claimed; `totalEscrowed += value` | `ItemClaimed(id, finder, stake)` |
+| `claimItem(uint256 id) payable` | verified, not paused | status Open, caller ≠ owner, `msg.value == claimStake` | finder, stake, claimedAt, claimWindow set; status Claimed; `totalEscrowed += value` | `ItemClaimed(id, finder, stake)` |
 | `confirmReturn(uint256 id)` | owner | status Claimed | status Completed; credit finder reward + stake | `ReturnConfirmed(id, finder, amount)` |
-| `rejectClaim(uint256 id)` | owner | status Claimed, within window | credit owner the stake; clear finder/stake/claimedAt; status Open | `ClaimRejected(id, finder, stakeToOwner)` |
+| `rejectClaim(uint256 id)` | owner | status Claimed, within window | credit owner the stake; clear finder/stake/claimedAt/claimWindow; status Open | `ClaimRejected(id, finder, stakeToOwner)` |
 | `raiseDispute(uint256 id)` | owner or finder | status Claimed, within window | status Disputed | `DisputeRaised(id, by)` |
 | `claimAfterTimeout(uint256 id)` | finder | status Claimed, window passed | status Completed; credit finder reward + stake | `TimeoutClaimed(id, finder, amount)` |
 | `resolveDispute(uint256 id, bool finderWins)` | arbiter | status Disputed | finderWins: Completed, credit finder reward + stake. Else: credit owner stake, reopen item as Open | `DisputeResolved(id, finderWins, arbiter)` |
@@ -134,12 +135,12 @@ Roles: `DEFAULT_ADMIN_ROLE`, `VERIFIER_ROLE`, `ARBITER_ROLE` (bytes32 constants)
 | `withdraw()` | anyone | `balances[msg.sender] > 0` | zero balance, then send with `call`; revert if send fails | `Withdrawn(to, amount)` |
 | `verifyStudent(address s)` / `verifyStudents(address[] s)` | verifier | `s != address(0)` | `isVerified = true` | `StudentVerified(s)` |
 | `revokeStudent(address s)` | verifier | — | `isVerified = false` (existing items still finish) | `StudentRevoked(s)` |
-| `setConfig(uint256 minReward, uint256 claimStake, uint64 confirmWindow)` | admin | bounds checked | updates config | `ConfigUpdated(...)` |
+| `setConfig(uint256 minReward, uint256 claimStake, uint64 confirmWindow)` | admin | bounds checked | updates config (new claims only) | `ConfigUpdated(...)` |
 | `pause()` / `unpause()` | admin | — | blocks `postItem` and `claimItem` only | OZ `Paused` / `Unpaused` |
 | `getItem(uint256 id) view returns (Item)` | anyone | item exists | — | — |
-| `withinWindow(uint256 id) view returns (bool)` | anyone | — | `block.timestamp <= claimedAt + confirmWindow` | — |
+| `withinWindow(uint256 id) view returns (bool)` | anyone | — | `block.timestamp <= claimedAt + claimWindow` | — |
 
-"Within window" means `block.timestamp <= claimedAt + confirmWindow`; "window passed" means strictly greater.
+"Within window" means `block.timestamp <= claimedAt + claimWindow` (the item's window, locked at claim time); "window passed" means strictly greater.
 Every credit updates `totalEscrowed -= x; totalCredited += x`. `withdraw` does `totalCredited -= amount`.
 
 ### Custom errors
@@ -496,11 +497,11 @@ States: `idle → checking → awaitingWallet → pending → confirmed | failed
 - [ ] **Cancel** (owner, Open): `cancelItem`
 - [ ] **Withdraw** (`/me` and header balance chip): `withdraw`
 - [ ] **Contact reveal**: after a claim, owner and finder see "Contact {email}" via `/api/items/[id]/contact`
-- [ ] **Countdown** on Claimed items: time left in the confirm window, computed from `claimedAt + confirmWindow` vs the latest block timestamp (not the device clock)
+- [ ] **Countdown** on Claimed items: time left in the confirm window, computed from `claimedAt + claimWindow` vs the latest block timestamp (not the device clock)
 - [ ] **Live updates**: `useWatchContractEvent` on the item page for that item's events → invalidate queries
 - [ ] **/me dashboard**: tabs "Needs your action", "Items I lost", "Items I found", "History"; withdrawable balance card
 
-**Done when:** all flows pass manually on Sepolia with Student A and Student B, including reject → reclaim, dispute both outcomes, and timeout (admin sets `confirmWindow` to 5 minutes for the test, then restores it).
+**Done when:** all flows pass manually on Sepolia with Student A and Student B, including reject → reclaim, dispute both outcomes, and timeout (admin sets `confirmWindow` to 5 minutes before the claim is made, then restores it).
 
 ---
 

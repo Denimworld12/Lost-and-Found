@@ -751,6 +751,11 @@ export const lostAndFoundAbi = [
             "type": "uint64"
           },
           {
+            "internalType": "uint32",
+            "name": "claimWindow",
+            "type": "uint32"
+          },
+          {
             "internalType": "uint128",
             "name": "reward",
             "type": "uint128"
