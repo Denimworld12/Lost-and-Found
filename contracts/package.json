@@ -7,12 +7,13 @@
   "scripts": {
     "build": "hardhat build",
     "test": "hardhat test",
-    "coverage": "hardhat test --coverage",
-    "gas": "hardhat test --gas-stats",
+    "coverage": "hardhat test --coverage && hardhat run scripts/check-coverage.ts",
+    "gas": "hardhat test nodejs --gas-stats --gas-stats-json cache/gas-stats.json && hardhat run scripts/gas-report.ts",
     "node": "hardhat node",
     "export-abi": "hardhat run scripts/export-abi.ts",
     "typecheck": "hardhat build --quiet && tsc --noEmit",
-    "clean": "hardhat clean"
+    "clean": "hardhat clean",
+    "slither": "slither contracts/LostAndFound.sol"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.1.8",
