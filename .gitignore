@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files (never commit secrets)
+.env
+.env*
+!.env.example
+
+# Contracts
+contracts/artifacts/
+contracts/cache/
+contracts/types/
+typechain/
+typechain-types/
+coverage/
+contracts/snapshots/
+.gas-snapshot
+
+# Subgraph
+subgraph/build/
+subgraph/generated/
+
+# Vercel
+.vercel
+
+# Tooling / OS
+.DS_Store
+*.log
+.turbo/
+crytic-export/

@@ -1,0 +1,13 @@
+{
+  "plugins": ["prettier-plugin-solidity", "prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "./apps/web/src/app/globals.css",
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "tabWidth": 4,
+        "printWidth": 100
+      }
+    }
+  ]
+}
