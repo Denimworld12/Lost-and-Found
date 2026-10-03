@@ -28,8 +28,9 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
         address owner; // slot 1: owner (20) + status (1) + createdAt (8)
         Status status;
         uint64 createdAt;
-        address finder; // slot 2: finder (20) + claimedAt (8)
+        address finder; // slot 2: finder (20) + claimedAt (8) + claimWindow (4)
         uint64 claimedAt;
+        uint32 claimWindow; // confirm window in seconds, locked at claim time
         uint128 reward; // slot 3: reward + stake
         uint128 stake; // deposit locked at claim time
         string metadataCID; // IPFS CID of the metadata JSON (max 100 bytes)
@@ -68,7 +69,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
     uint256 public minReward;
     /// @notice Deposit a finder locks when claiming, in wei. Applies to new claims only.
     uint256 public claimStake;
-    /// @notice Time the owner has to respond to a claim, in seconds.
+    /// @notice Time the owner has to respond to a claim, in seconds. Applies to new claims only.
     uint64 public confirmWindow;
 
     // ─────────────────────────────────────────────────────────────── Errors
@@ -168,6 +169,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
             createdAt: uint64(block.timestamp),
             finder: address(0),
             claimedAt: 0,
+            claimWindow: 0,
             reward: uint128(msg.value),
             stake: 0,
             metadataCID: cid
@@ -178,7 +180,8 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /// @notice Claims an open item as its finder by locking exactly `claimStake` as a deposit.
-    /// @dev The deposit amount is stored on the item, so later config changes don't affect it.
+    /// @dev The deposit and confirm window are stored on the item, so later config changes
+    /// don't affect it.
     /// @param id Item ID.
     function claimItem(uint256 id) external payable onlyVerified whenNotPaused itemExists(id) {
         Item storage item = items[id];
@@ -189,6 +192,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
         item.finder = msg.sender;
         item.stake = uint128(msg.value);
         item.claimedAt = uint64(block.timestamp);
+        item.claimWindow = uint32(confirmWindow);
         item.status = Status.Claimed;
         totalEscrowed += msg.value;
 
@@ -225,6 +229,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
         item.finder = address(0);
         item.stake = 0;
         item.claimedAt = 0;
+        item.claimWindow = 0;
         item.status = Status.Open;
         _credit(msg.sender, stake);
 
@@ -245,7 +250,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /// @notice Finder collects reward + deposit after the owner let the confirm window pass.
-    /// @dev "Window passed" means `block.timestamp > claimedAt + confirmWindow` (strictly).
+    /// @dev "Window passed" means `block.timestamp > claimedAt + claimWindow` (strictly).
     /// @param id Item ID.
     function claimAfterTimeout(uint256 id) external itemExists(id) {
         Item storage item = items[id];
@@ -309,6 +314,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
             item.finder = address(0);
             item.stake = 0;
             item.claimedAt = 0;
+            item.claimWindow = 0;
             item.status = Status.Open;
             _credit(item.owner, stake);
         }
@@ -342,7 +348,8 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
 
     // ─────────────────────────────────────────────────────────────── Admin
 
-    /// @notice Updates the config for new posts and claims. Existing claims keep their deposit.
+    /// @notice Updates the config for new posts and claims. Existing claims keep their deposit
+    /// and confirm window.
     /// @param minReward_ Smallest reward in wei (> 0, fits in uint128).
     /// @param claimStake_ Finder deposit in wei (> 0, fits in uint128).
     /// @param confirmWindow_ Owner response window in seconds (5 minutes to 14 days).
@@ -374,7 +381,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
     }
 
     /// @notice Whether an item's claim is still inside the confirm window.
-    /// @dev `block.timestamp <= claimedAt + confirmWindow`. Only meaningful while Claimed.
+    /// @dev `block.timestamp <= claimedAt + claimWindow`. Only meaningful while Claimed.
     /// @param id Item ID.
     /// @return True while the owner can still reject or either party can dispute.
     function withinWindow(uint256 id) external view returns (bool) {
@@ -396,7 +403,7 @@ contract LostAndFound is AccessControl, ReentrancyGuard, Pausable {
     // ─────────────────────────────────────────────────────────────── Internal
 
     function _withinWindow(Item storage item) private view returns (bool) {
-        return block.timestamp <= uint256(item.claimedAt) + confirmWindow;
+        return block.timestamp <= uint256(item.claimedAt) + item.claimWindow;
     }
 
     /// @dev Moves `amount` from escrow to `to`'s withdrawable balance.

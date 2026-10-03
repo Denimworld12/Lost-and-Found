@@ -91,6 +91,19 @@ contract LostAndFoundFuzzTest is Test {
         assertEq(lf.getItem(id).stake, newStake);
     }
 
+    /// @dev Any later window change leaves an existing claim's window at WINDOW.
+    function testFuzz_ConfigChangeKeepsClaimWindow(uint64 newWindow) public {
+        newWindow = uint64(bound(newWindow, lf.MIN_CONFIRM_WINDOW(), lf.MAX_CONFIRM_WINDOW()));
+        (uint256 id, uint64 claimedAt) = _postAndClaim();
+        lf.setConfig(MIN_REWARD, STAKE, newWindow);
+
+        assertEq(lf.getItem(id).claimWindow, WINDOW);
+        vm.warp(uint256(claimedAt) + WINDOW);
+        assertTrue(lf.withinWindow(id));
+        vm.warp(uint256(claimedAt) + WINDOW + 1);
+        assertFalse(lf.withinWindow(id));
+    }
+
     /// @dev Offsets <= 0 are inside the window (WindowOpen); > 0 are after it.
     function testFuzz_ClaimAfterTimeoutEdge(int256 offset) public {
         offset = bound(offset, -int256(uint256(WINDOW)), int256(uint256(WINDOW)));
@@ -224,7 +237,7 @@ contract Handler is Test {
         if (id == 0) return;
         LostAndFound.Item memory item = lf.getItem(id);
         if (item.status != LostAndFound.Status.Claimed) return;
-        uint256 windowEnd = uint256(item.claimedAt) + lf.confirmWindow();
+        uint256 windowEnd = uint256(item.claimedAt) + item.claimWindow;
         if (block.timestamp <= windowEnd) vm.warp(windowEnd + 1);
         vm.prank(item.finder);
         lf.claimAfterTimeout(id);
@@ -253,6 +266,11 @@ contract Handler is Test {
     function changeStake(uint256 stake) external {
         stake = bound(stake, 1, 1 ether);
         lf.setConfig(lf.minReward(), stake, lf.confirmWindow());
+    }
+
+    function changeWindow(uint64 window) external {
+        window = uint64(bound(window, lf.MIN_CONFIRM_WINDOW(), lf.MAX_CONFIRM_WINDOW()));
+        lf.setConfig(lf.minReward(), lf.claimStake(), window);
     }
 
     function skipTime(uint256 seconds_) external {

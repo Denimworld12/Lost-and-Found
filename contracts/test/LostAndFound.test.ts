@@ -451,6 +451,7 @@ describe("LostAndFound", () => {
       assert.ok(item.createdAt > BigInt(before));
       assert.equal(item.finder, zeroAddress);
       assert.equal(item.claimedAt, 0n);
+      assert.equal(item.claimWindow, 0);
       assert.equal(item.reward, MIN_REWARD);
       assert.equal(item.stake, 0n);
       assert.equal(item.metadataCID, "cid-2");
@@ -471,6 +472,7 @@ describe("LostAndFound", () => {
       assert.equal(getAddress(item.finder), getAddress(bob.account.address));
       assert.equal(item.stake, STAKE);
       assert.equal(item.claimedAt, BigInt(await networkHelpers.time.latest()));
+      assert.equal(BigInt(item.claimWindow), WINDOW);
       assert.equal(await lf.read.totalEscrowed(), REWARD + STAKE);
     });
 
@@ -645,6 +647,7 @@ describe("LostAndFound", () => {
       assert.equal(item.finder, zeroAddress);
       assert.equal(item.stake, 0n);
       assert.equal(item.claimedAt, 0n);
+      assert.equal(item.claimWindow, 0);
       assert.equal(item.reward, REWARD);
       assert.equal(await lf.read.balances([alice.account.address]), STAKE);
       assert.equal(await lf.read.balances([bob.account.address]), 0n);
@@ -865,6 +868,7 @@ describe("LostAndFound", () => {
       assert.equal(item.finder, zeroAddress);
       assert.equal(item.stake, 0n);
       assert.equal(item.claimedAt, 0n);
+      assert.equal(item.claimWindow, 0);
       assert.equal(item.reward, REWARD);
       assert.equal(await lf.read.balances([alice.account.address]), STAKE);
       assert.equal(await lf.read.balances([bob.account.address]), 0n);
@@ -1135,6 +1139,49 @@ describe("LostAndFound", () => {
         value: newStake,
       });
       assert.equal((await lf.read.getItem([2n])).stake, newStake);
+    });
+
+    it("shortening the window after a claim does not shorten that claim's window", async () => {
+      const { lf, admin, alice, bob, carol, claimedAt } =
+        await setup(claimedFixture);
+      await lf.write.setConfig([MIN_REWARD, STAKE, MIN_WINDOW], {
+        account: admin.account,
+      });
+      assert.equal(BigInt((await lf.read.getItem([1n])).claimWindow), WINDOW);
+
+      await networkHelpers.time.setNextBlockTimestamp(
+        claimedAt + MIN_WINDOW + 1n,
+      );
+      await viem.assertions.revertWithCustomError(
+        lf.write.claimAfterTimeout([1n], { account: bob.account }),
+        lf,
+        "WindowOpen",
+      );
+      await networkHelpers.time.setNextBlockTimestamp(claimedAt + WINDOW);
+      await lf.write.rejectClaim([1n], { account: alice.account });
+      assert.equal((await lf.read.getItem([1n])).status, Status.Open);
+
+      // New claims lock the new window.
+      await lf.write.claimItem([1n], { account: carol.account, value: STAKE });
+      const item = await lf.read.getItem([1n]);
+      assert.equal(BigInt(item.claimWindow), MIN_WINDOW);
+      await networkHelpers.time.increaseTo(item.claimedAt + MIN_WINDOW);
+      assert.equal(await lf.read.withinWindow([1n]), true);
+      await networkHelpers.mine();
+      assert.equal(await lf.read.withinWindow([1n]), false);
+    });
+
+    it("lengthening the window after a claim does not delay that claim's timeout", async () => {
+      const { lf, admin, bob, claimedAt } = await setup(claimedFixture);
+      await lf.write.setConfig([MIN_REWARD, STAKE, MAX_WINDOW], {
+        account: admin.account,
+      });
+      await networkHelpers.time.setNextBlockTimestamp(claimedAt + WINDOW + 1n);
+      await lf.write.claimAfterTimeout([1n], { account: bob.account });
+      assert.equal(
+        await lf.read.balances([bob.account.address]),
+        REWARD + STAKE,
+      );
     });
 
     it("a revoked finder's existing claim still finishes", async () => {
