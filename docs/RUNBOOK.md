@@ -5,10 +5,27 @@ redeploy, faucet refills, incident response).
 
 ## Contract deployments
 
-| Network           | Deployment id        | Address          | Deploy tx | Block |
-| ----------------- | -------------------- | ---------------- | --------- | ----- |
-| Sepolia           | `sepolia-v1`         | not deployed yet |           |       |
-| Sepolia (staging) | `sepolia-staging-v1` | not deployed yet |           |       |
+| Network           | Deployment id        | Address                                                                                                                              | Deploy tx                                                                                                                 | Block    |
+| ----------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Sepolia           | `sepolia-v1`         | [`0x15C6A0d31Cd71a157b8ed0ff46f4F9CA84A0c1dD`](https://sepolia.etherscan.io/address/0x15C6A0d31Cd71a157b8ed0ff46f4F9CA84A0c1dD#code) | [`0x99f58eb8…f6243f`](https://sepolia.etherscan.io/tx/0x99f58eb8f835becdcf630ad438d817812153f42d446dc7991a35d657c2f6243f) | 11836334 |
+| Sepolia (staging) | `sepolia-staging-v1` | [`0x37542E00914F3758b6E60b86eF8076207bDCa1F6`](https://sepolia.etherscan.io/address/0x37542E00914F3758b6E60b86eF8076207bDCa1F6#code) | [`0x4e608a34…5a3a59`](https://sepolia.etherscan.io/tx/0x4e608a34723d265337eb2931e8236e1f7ed23f636ab41e7684e6387aec5a3a59) | 11836342 |
+
+Both contracts are verified on Etherscan, Blockscout and Sourcify, with config 0.001 ETH minimum reward,
+0.0005 ETH claim stake and a 3-day confirm window. Full deploy tx hashes are in `packages/shared/src/addresses.ts`.
+
+### Sepolia accounts
+
+| Role     | Address                                      | Key                                                                |
+| -------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| Deployer | `0xc8f5ac25786c12be9b2ab05afee522c359801829` | `SEPOLIA_PRIVATE_KEY` (captain's MetaMask Deployer); holds no role |
+| Admin    | `0x0217C435A8C4a104E641CFA438E582716c862d9B` | `ADMIN_PRIVATE_KEY`                                                |
+| Verifier | `0x45933417B883B3ecb5eDB185c2a73823F3313016` | `VERIFIER_PRIVATE_KEY` (server wallet for `verifyStudent`)         |
+| Arbiter  | `0x9FF4CD7D8DaF39334b469D7C009e5BC4830B6947` | `ARBITER_PRIVATE_KEY`                                              |
+
+Admin, verifier and arbiter were generated for this project; their keys exist only in the Hardhat
+**development** keystore on the machine that deployed (`pnpm hardhat keystore path --dev`). Back that
+file and its password file up. Losing `ADMIN_PRIVATE_KEY` loses pause, config and role management for
+both contracts. Each of these wallets needs Sepolia ETH before it can send transactions.
 
 ## Local development
 
@@ -72,7 +89,7 @@ cd contracts
 pnpm deploy:sepolia                    # deployment id sepolia-v1, verifies on Etherscan
 pnpm setup-roles:sepolia               # checks roles; moves admin off the deployer if needed
 pnpm deploy:staging                    # second contract, deployment id sepolia-staging-v1
-DEPLOYMENT_ID=sepolia-staging-v1 pnpm setup-roles:sepolia
+IGNITION_DEPLOYMENT_ID=sepolia-staging-v1 pnpm setup-roles:sepolia
 pnpm export-abi                        # commit packages/shared and ignition/deployments/
 ```
 

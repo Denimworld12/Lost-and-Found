@@ -4,7 +4,7 @@
 // Every step checks first, so the script is safe to re-run.
 //
 // Usage: pnpm hardhat run scripts/setup-roles.ts --network sepolia
-// Pick another deployment with DEPLOYMENT_ID (default: chain-31337 locally, sepolia-v1 on Sepolia).
+// Pick another deployment with IGNITION_DEPLOYMENT_ID (default: chain-31337 locally, sepolia-v1 on Sepolia).
 import { network } from "hardhat";
 import {
   isAddressEqual,
@@ -28,10 +28,10 @@ const [deployer] = await viem.getWalletClients();
 
 const chainId = await publicClient.getChainId();
 const deploymentId =
-  process.env.DEPLOYMENT_ID ?? DEFAULT_DEPLOYMENT_IDS[chainId];
+  process.env.IGNITION_DEPLOYMENT_ID ?? DEFAULT_DEPLOYMENT_IDS[chainId];
 if (deploymentId === undefined) {
   throw new Error(
-    `No default deployment id for chain ${chainId}; set DEPLOYMENT_ID`,
+    `No default deployment id for chain ${chainId}; set IGNITION_DEPLOYMENT_ID`,
   );
 }
 const deployment = await readDeployment(deploymentId);

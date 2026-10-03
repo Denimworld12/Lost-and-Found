@@ -20,6 +20,20 @@ export const lostAndFoundDeployments = {
     deployTx: "0xbe8e7a9e9ae396d19fa3a725a15d1146f8941dec57928457762b5526f8e46c8b",
     deployBlock: 1n,
   },
+  sepolia: {
+    deploymentId: "sepolia-v1",
+    chainId: 11155111,
+    address: "0x15C6A0d31Cd71a157b8ed0ff46f4F9CA84A0c1dD",
+    deployTx: "0x99f58eb8f835becdcf630ad438d817812153f42d446dc7991a35d657c2f6243f",
+    deployBlock: 11836334n,
+  },
+  sepoliaStaging: {
+    deploymentId: "sepolia-staging-v1",
+    chainId: 11155111,
+    address: "0x37542E00914F3758b6E60b86eF8076207bDCa1F6",
+    deployTx: "0x4e608a34723d265337eb2931e8236e1f7ed23f636ab41e7684e6387aec5a3a59",
+    deployBlock: 11836342n,
+  },
 } as const satisfies Record<string, LostAndFoundDeployment>;
 
 /** Main LostAndFound deployment per chain ID. */
@@ -27,4 +41,5 @@ export const lostAndFoundAddresses: Partial<
   Record<number, LostAndFoundDeployment>
 > = {
   31337: lostAndFoundDeployments.localhost,
+  11155111: lostAndFoundDeployments.sepolia,
 };
