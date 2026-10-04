@@ -53,7 +53,10 @@ export const students = pgTable(
 
 export type Student = typeof students.$inferSelect;
 
-/** Every pinned upload, for the per-hour rate limit and abuse tracing. */
+/**
+ * Every pinned upload, for the per-hour rate limit and abuse tracing. The row is
+ * reserved before pinning (empty `cid`, 0 bytes) and deleted if pinning fails.
+ */
 export const uploads = pgTable(
   "uploads",
   {
