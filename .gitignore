@@ -35,3 +35,6 @@ subgraph/generated/
 *.log
 .turbo/
 crytic-export/
+
+# Ignition state for the local node (chain 31337) resets with every node restart
+contracts/ignition/deployments/chain-31337/
