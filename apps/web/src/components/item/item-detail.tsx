@@ -78,7 +78,7 @@ export function ItemDetail({ initialItem }: { initialItem: Item }) {
             )}
           </div>
 
-          <StatusPanel status={item.status} />
+          <StatusPanel id={item.id} status={item.status} />
 
           {metadataError && (
             <p role="status" className="text-body-sm text-cloud">

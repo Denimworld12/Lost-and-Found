@@ -1,4 +1,5 @@
 import type { Category, ItemStatus } from "@clf/shared";
+import type { ItemEvent } from "@/lib/graph";
 
 export type NodeTone =
   "cyan" | "violet" | "magenta" | "green" | "orange" | "steel";
@@ -28,7 +29,7 @@ export const STATUS_META: Record<
   Completed: {
     tone: "green",
     label: "Returned",
-    explanation: "Back with its owner. The finder was paid the reward.",
+    explanation: "The finder was paid the reward.",
   },
   Cancelled: {
     tone: "steel",
@@ -36,6 +37,26 @@ export const STATUS_META: Record<
     explanation: "The owner cancelled this listing and got the reward back.",
   },
 };
+
+/**
+ * The StatusPanel line. A completed item says how it completed, read from its newest event
+ * (newest first); without that event it falls back to the neutral line.
+ */
+export function statusExplanation(
+  status: ItemStatus,
+  events: readonly ItemEvent[] | undefined,
+): string {
+  if (status === "Completed") {
+    const last = events?.[0];
+    if (last?.kind === "Confirmed")
+      return "The owner confirmed the item was returned.";
+    if (last?.kind === "TimeoutClaimed")
+      return "The confirm window passed without a response, so the finder was paid automatically.";
+    if (last?.kind === "Resolved" && last.finderWins === true)
+      return "A dispute was raised and the arbiter ruled in the finder's favor.";
+  }
+  return STATUS_META[status].explanation;
+}
 
 /** Category → node dot colour (docs/UI_SPEC.md → Category mapping). */
 export const CATEGORY_TONE: Record<Category, NodeTone> = {

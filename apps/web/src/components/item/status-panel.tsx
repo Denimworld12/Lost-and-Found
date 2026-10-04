@@ -1,17 +1,23 @@
+"use client";
+
 import type { ItemStatus } from "@clf/shared";
+import { useItemHistory } from "@/hooks/useItem";
 import { cn } from "@/lib/utils";
 import { NodeDot } from "./node-dot";
-import { STATUS_META } from "./status";
+import { STATUS_META, statusExplanation } from "./status";
 
 /** Carbon card with the status as a large label (10px dot) and a one-line explanation. */
 export function StatusPanel({
+  id,
   status,
   className,
 }: {
+  id: bigint;
   status: ItemStatus;
   className?: string;
 }) {
   const meta = STATUS_META[status];
+  const { data: history } = useItemHistory(id, status);
   return (
     <div
       className={cn(
@@ -26,7 +32,9 @@ export function StatusPanel({
           {meta.label}
         </span>
       </p>
-      <p className="text-body text-cloud">{meta.explanation}</p>
+      <p className="text-body text-cloud">
+        {statusExplanation(status, history?.events)}
+      </p>
     </div>
   );
 }

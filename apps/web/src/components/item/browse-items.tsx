@@ -65,9 +65,14 @@ export function BrowseItems() {
   );
 
   const [query, setQuery] = useState(filters.query);
+  const [urlQuery, setUrlQuery] = useState(filters.query);
+  if (filters.query !== urlQuery) {
+    setUrlQuery(filters.query);
+    if (query.trim() !== filters.query) setQuery(filters.query);
+  }
 
   function setParam(key: string, value: string | null) {
-    const next = new URLSearchParams(searchParams.toString());
+    const next = new URLSearchParams(window.location.search);
     if (value === null || value === "") next.delete(key);
     else next.set(key, value);
     const search = next.toString();
