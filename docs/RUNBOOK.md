@@ -336,21 +336,22 @@ build installs with pnpm from `packageManager` and finishes `READY`).
 Set with `vercel env add <NAME> production` / `preview`, values piped from `apps/web/.env.local` (secrets as
 `--sensitive`, so the dashboard can't show them again). An env change only takes effect on the next deploy.
 
-| Variable                                                                         | Production                                                | Preview                                        |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------- |
-| `NEXT_PUBLIC_CHAIN_ID`                                                           | `11155111`                                                | same                                           |
-| `NEXT_PUBLIC_CONTRACT_ADDRESS` / `_DEPLOY_BLOCK`                                 | `sepolia-v1`, `0x15C6…c1dD` / 11836334                    | `sepolia-staging-v1`, `0x3754…a1F6` / 11836342 |
-| `SEPOLIA_RPC_URL` (server)                                                       | Alchemy key from `.env.local`                             | same                                           |
-| `NEXT_PUBLIC_SEPOLIA_RPC_URL`                                                    | unset: browser uses `ethereum-sepolia-rpc.publicnode.com` | unset                                          |
-| `NEXT_PUBLIC_PINATA_GATEWAY`, `_GATEWAY_KEY`, `PINATA_JWT`                       | from `.env.local`                                         | same                                           |
-| `VERIFIER_PRIVATE_KEY`, `DATABASE_URL`                                           | from `.env.local` (same Neon database as development)     | same                                           |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`                          | Clerk development instance                                | same                                           |
-| `CLERK_WEBHOOK_SIGNING_SECRET`                                                   | production endpoint's secret (below)                      | unset                                          |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `_SIGN_UP_URL` / `_SIGN_UP_FORCE_REDIRECT_URL` | `/sign-in` / `/sign-up` / `/onboarding`                   | same                                           |
-| `ALLOWED_EMAIL_DOMAIN`                                                           | from `.env.local`                                         | same                                           |
-| `NEXT_PUBLIC_SITE_URL`                                                           | `https://campus-lost-found-rosy-two.vercel.app`           | unset (preview URLs change per deploy)         |
-| `SENTRY_DSN`                                                                     | from `.env.local`                                         | same                                           |
-| `NEXT_PUBLIC_SUBGRAPH_URL`, `NEXT_PUBLIC_SENTRY_DSN`                             | unset (no subgraph yet; no Sentry SDK in the app yet)     | unset                                          |
+| Variable                                                                         | Production                                                           | Preview                                        |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------- |
+| `NEXT_PUBLIC_CHAIN_ID`                                                           | `11155111`                                                           | same                                           |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS` / `_DEPLOY_BLOCK`                                 | `sepolia-v1`, `0x15C6…c1dD` / 11836334                               | `sepolia-staging-v1`, `0x3754…a1F6` / 11836342 |
+| `SEPOLIA_RPC_URL` (server)                                                       | Alchemy key from `.env.local`                                        | same                                           |
+| `NEXT_PUBLIC_SEPOLIA_RPC_URL`                                                    | unset: browser uses `ethereum-sepolia-rpc.publicnode.com`            | unset                                          |
+| `NEXT_PUBLIC_PINATA_GATEWAY`, `_GATEWAY_KEY`, `PINATA_JWT`                       | from `.env.local`                                                    | same                                           |
+| `VERIFIER_PRIVATE_KEY`, `DATABASE_URL`                                           | from `.env.local` (same Neon database as development)                | same                                           |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`                          | Clerk development instance                                           | same                                           |
+| `CLERK_WEBHOOK_SIGNING_SECRET`                                                   | production endpoint's secret (below)                                 | unset                                          |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `_SIGN_UP_URL` / `_SIGN_UP_FORCE_REDIRECT_URL` | `/sign-in` / `/sign-up` / `/onboarding`                              | same                                           |
+| `ALLOWED_EMAIL_DOMAIN`                                                           | from `.env.local`                                                    | same                                           |
+| `NEXT_PUBLIC_SITE_URL`                                                           | `https://campus-lost-found-rosy-two.vercel.app`                      | unset (preview URLs change per deploy)         |
+| `SENTRY_DSN`                                                                     | from `.env.local`                                                    | same                                           |
+| `NEXT_PUBLIC_SUBGRAPH_URL`                                                       | `https://api.studio.thegraph.com/query/1762923/lost-and-found/0.0.1` | unset (the subgraph indexes `sepolia-v1` only) |
+| `NEXT_PUBLIC_SENTRY_DSN`                                                         | unset (no Sentry SDK in the app yet)                                 | unset                                          |
 
 - **Strip quotes before piping a value.** `.env.local` may wrap a value in quotes (`DATABASE_URL='postgres…'`).
   Node's env loader drops them, but `vercel env add` stores them as part of the value. The first production
@@ -383,7 +384,11 @@ Its signing secret is in `CLERK_WEBHOOK_SIGNING_SECRET` (production). A test `us
 - Pinata: the dedicated gateway restricts reads by Gateway Key, not by domain, so nothing was allowlisted.
   Item photos load on production through `/_next/image`.
 - Alchemy: no browser key (see `NEXT_PUBLIC_SEPOLIA_RPC_URL`), so no domain allowlist is needed.
-- Subgraph: none yet (Phase 5); the app reads the contract directly.
+- Subgraph: the captain published `lost-and-found` v0.0.1 to Subgraph Studio on 4 Oct 2026 (indexes
+  `sepolia-v1`; `items`, `itemEvents`, `stats`, `config`), and its query URL was added to production and
+  redeployed. The app doesn't query it yet: `NEXT_PUBLIC_SUBGRAPH_URL` only adds its origin to the CSP, and
+  `apps/web/src/lib/graph.ts` still reads the contract directly. Switching `graph.ts` to the subgraph (with the
+  contract as fallback) is the remaining Phase 5 code.
 
 ### Accounts and owners
 
