@@ -334,19 +334,19 @@ pnpm dlx shadcn@latest init            # then add: button dialog sheet tabs badg
 
 ### Tasks
 
-- [ ] Design tokens in `src/app/globals.css` (Tailwind v4 `@theme`) exactly as `docs/UI_SPEC.md` → "Design tokens" (Axelar-style dark theme). Inter and DM Mono via `next/font/google`; Clash Grotesk woff2 files from Fontshare into `src/fonts/` via `next/font/local` (human downloads them if the network blocks it)
-- [ ] Hero lattice SVG component (`src/components/home/Lattice.tsx`): deterministic diamond grid, item dots placed by item id, hover/focus tooltips
-- [ ] `src/lib/chain.ts`: Sepolia (and Hardhat local when `NEXT_PUBLIC_CHAIN_ID=31337`), explorer URL builders `txUrl(hash)`, `addressUrl(addr)`
-- [ ] `src/lib/wagmi.ts`: `createConfig` with the selected chain, `injected()` connector, HTTP transport from `NEXT_PUBLIC_SEPOLIA_RPC_URL`, `ssr: true`, cookie storage
-- [ ] `src/components/providers.tsx` (`'use client'`): `WagmiProvider` + `QueryClientProvider` + `Toaster`
-- [ ] `src/lib/contract.ts`: `{ address, abi }` from `@clf/shared`, typed read helpers
-- [ ] `src/lib/graph.ts`: typed queries `getItems(filters, cursor)`, `getItem(id)`, `getItemsByUser(addr)`, `getStats()`
-- [ ] Fallback: if the subgraph errors or is more than 50 blocks behind (`_meta { block { number } }`), read `itemCount` + `getItem` via viem `multicall` (latest 50 items)
-- [ ] `src/lib/ipfs.ts`: `ipfsUrl(cid)` using the Pinata gateway; `fetchMetadata(cid)` with zod schema + React Query cache (`staleTime: Infinity`, CIDs never change)
-- [ ] `src/lib/format.ts`: `formatEth(wei)` (max 4 decimals, "0.01 ETH"), `shortAddress`, relative time, countdown
-- [ ] Layout shell: header, mobile bottom nav, footer, skip link (UI_SPEC → "App shell")
-- [ ] Pages working **without login**: `/`, `/items`, `/items/[id]` (no action buttons yet), `/how-it-works`, `/transparency`, `not-found`, `error`
-- [ ] `next.config.ts`: `images.remotePatterns` for the Pinata gateway; security headers (CSP allowing Clerk, Alchemy, Pinata, subgraph; `X-Frame-Options: DENY`; `Referrer-Policy: strict-origin-when-cross-origin`)
+- [x] Design tokens in `src/app/globals.css` (Tailwind v4 `@theme`) exactly as `docs/UI_SPEC.md` → "Design tokens" (Axelar-style dark theme). Inter and DM Mono via `next/font/google`; Clash Grotesk woff2 files from Fontshare into `src/fonts/` via `next/font/local` (human downloads them if the network blocks it)
+- [x] Hero lattice SVG component (`src/components/home/Lattice.tsx`): deterministic diamond grid, item dots placed by item id, hover/focus tooltips
+- [x] `src/lib/chain.ts`: Sepolia (and Hardhat local when `NEXT_PUBLIC_CHAIN_ID=31337`), explorer URL builders `txUrl(hash)`, `addressUrl(addr)`
+- [x] `src/lib/wagmi.ts`: `createConfig` with the selected chain, `injected()` connector, HTTP transport from `NEXT_PUBLIC_SEPOLIA_RPC_URL`, `ssr: true`, cookie storage
+- [x] `src/components/providers.tsx` (`'use client'`): `WagmiProvider` + `QueryClientProvider` + `Toaster`
+- [x] `src/lib/contract.ts`: `{ address, abi }` from `@clf/shared`, typed read helpers
+- [x] `src/lib/graph.ts`: typed queries `getItems(filters, cursor)`, `getItem(id)`, `getItemsByUser(addr)`, `getStats()`
+- [x] Fallback (today the only path; Phase 5 not built yet, see `docs/DECISIONS.md`): if the subgraph errors or is more than 50 blocks behind (`_meta { block { number } }`), read `itemCount` + `getItem` via viem `multicall` (latest 50 items)
+- [x] `src/lib/ipfs.ts`: `ipfsUrl(cid)` using the Pinata gateway; `fetchMetadata(cid)` with zod schema + React Query cache (`staleTime: Infinity`, CIDs never change)
+- [x] `src/lib/format.ts`: `formatEth(wei)` (max 4 decimals, "0.01 ETH"), `shortAddress`, relative time, countdown
+- [x] Layout shell: header, mobile bottom nav, footer, skip link (UI_SPEC → "App shell")
+- [x] Pages working **without login**: `/`, `/items`, `/items/[id]` (no action buttons yet), `/how-it-works`, `/transparency`, `not-found`, `error`
+- [x] `next.config.ts`: `images.remotePatterns` for the Pinata gateway; security headers (CSP allowing Clerk, Alchemy, Pinata, subgraph; `X-Frame-Options: DENY`; `Referrer-Policy: strict-origin-when-cross-origin`)
 
 **Done when:** a logged-out visitor can browse, filter and open items from the Sepolia contract on desktop and a 360 px phone; Lighthouse accessibility ≥ 95.
 
