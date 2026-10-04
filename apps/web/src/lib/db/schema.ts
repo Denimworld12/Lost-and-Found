@@ -9,6 +9,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -90,7 +91,10 @@ export const adminActions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("admin_actions_created_idx").on(table.createdAt)],
+  (table) => [
+    index("admin_actions_created_idx").on(table.createdAt),
+    uniqueIndex("admin_actions_tx_hash_idx").on(table.txHash),
+  ],
 );
 
 /** Who saw whose contact details, and when. */

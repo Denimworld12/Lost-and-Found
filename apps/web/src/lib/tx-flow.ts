@@ -39,7 +39,11 @@ export type WriteFunctionName =
   | "raiseDispute"
   | "claimAfterTimeout"
   | "cancelItem"
-  | "withdraw";
+  | "withdraw"
+  | "resolveDispute"
+  | "setConfig"
+  | "pause"
+  | "unpause";
 
 export interface TxCall {
   functionName: WriteFunctionName;
@@ -59,6 +63,11 @@ export interface TxRequest extends TxCall {
    * (the post flow uploads the photo here and gets the CID). Its error message is shown as is.
    */
   prepare?: () => Promise<Partial<TxCall>>;
+  /**
+   * On-chain role the sending wallet must hold (admin writes). Checked with `hasRole` before
+   * the simulation so a missing role is explained instead of shown as a generic revert.
+   */
+  requiredRole?: { role: Hash; label: string };
 }
 
 /** The step a `TxPanel` row tracks; `prepare` runs inside `checking`. */
@@ -102,6 +111,8 @@ export interface TxFlowDeps {
   /** Highest fee per gas the wallet may charge (EIP-1559 `maxFeePerGas`). */
   maxFeePerGas: () => Promise<bigint>;
   getBalance: (address: Address) => Promise<bigint>;
+  /** The contract's `hasRole(role, account)`. */
+  hasRole: (role: Hash, account: Address) => Promise<boolean>;
   /** `simulateContract`; returns the request to hand to the wallet. */
   simulate: (call: TxCall & { account: Address }) => Promise<unknown>;
   write: (request: unknown) => Promise<Hash>;
@@ -117,6 +128,10 @@ export const RECEIPT_TIMEOUT_MESSAGE =
 
 export function wrongWalletMessage(linked: Address): string {
   return `Switch MetaMask to your registered wallet ${shortAddress(linked)}.`;
+}
+
+export function missingRoleMessage(account: Address, label: string): string {
+  return `Your wallet ${shortAddress(account)} doesn't hold the ${label} role on the contract, so the contract would refuse this. Only the ${label} wallet can do it.`;
 }
 
 /** Hashes sent from this tab, so live updates don't announce the viewer's own actions. */
@@ -167,6 +182,15 @@ export async function executeTx(
   if (!isAddressEqual(address, deps.linkedWallet))
     return fail(wrongWalletMessage(deps.linkedWallet));
   const account = getAddress(address);
+
+  if (request.requiredRole) {
+    try {
+      if (!(await deps.hasRole(request.requiredRole.role, account)))
+        return fail(missingRoleMessage(account, request.requiredRole.label));
+    } catch (error) {
+      return failWith(error);
+    }
+  }
 
   let call: TxCall = {
     functionName: request.functionName,

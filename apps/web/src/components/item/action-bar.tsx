@@ -9,6 +9,7 @@ import { TxPanel } from "@/components/tx/tx-panel";
 import { WalletGate } from "@/components/tx/wallet-gate";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useContractConfig } from "@/hooks/useChainData";
 import { useTxFlow } from "@/hooks/useTxFlow";
 import { getPublicClient, lostAndFound } from "@/lib/contract";
 import { CONTRACT_ERROR_MESSAGES } from "@/lib/errors";
@@ -70,10 +71,26 @@ export function ActionBar({
   chainNow: bigint | null;
   withdrawable: bigint;
 }) {
-  const plan = planItemActions(item, role, chainNow, withdrawable);
+  const config = useContractConfig();
+  const planned = planItemActions(item, role, chainNow, withdrawable);
+  // While the admins have paused claiming, "I found this" becomes a note. The contract refuses it too.
+  const pausedClaim =
+    config.data?.paused === true && planned.actions.includes("claim");
+  const plan = pausedClaim
+    ? {
+        ...planned,
+        actions: planned.actions.filter((action) => action !== "claim"),
+      }
+    : planned;
   // Keep the bar mounted while a write finishes, even if the new status has no actions.
   const [active, setActive] = useState(false);
-  if (plan.actions.length === 0 && plan.note === null && !active) return null;
+  if (
+    plan.actions.length === 0 &&
+    plan.note === null &&
+    !pausedClaim &&
+    !active
+  )
+    return null;
 
   let content: ReactNode;
   if (plan.note === "sign-in") {
@@ -109,7 +126,13 @@ export function ActionBar({
         actions={plan.actions}
         withdrawable={withdrawable}
         onActiveChange={setActive}
-        fallback={plan.note ? <Note text={NOTE_COPY[plan.note]} /> : null}
+        fallback={
+          pausedClaim ? (
+            <Note text={CONTRACT_ERROR_MESSAGES.EnforcedPause as string} />
+          ) : plan.note ? (
+            <Note text={NOTE_COPY[plan.note]} />
+          ) : null
+        }
       />
     );
   }

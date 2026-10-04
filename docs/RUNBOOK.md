@@ -167,15 +167,14 @@ value ≤ balance → `simulateContract` → MetaMask → receipt. A revert is s
 `src/lib/errors.ts` before MetaMask opens. A student whose wallet isn't whitelisted sees "Finish activating
 your account before posting or claiming."
 
-The arbiter's "Pay the finder / Return to owner" buttons arrive with the Phase 9 admin console. Until then
-resolve a dispute from a script with `ARBITER_PRIVATE_KEY` (`resolveDispute(id, finderWins)`), and change
-the confirm window with `ADMIN_PRIVATE_KEY` (`setConfig(minReward, claimStake, confirmWindow)`).
+Disputes are resolved, and the confirm window changed, from the admin console (`/admin`, see below).
+Phase 8's live check below did both from scripts because the console didn't exist yet.
 
 ### Timeout demo
 
-1. Admin calls `setConfig(minReward, claimStake, 300)` (5 minutes, the minimum) **before** the claim.
+1. Admin sets the response window to 5 minutes (the minimum) in `/admin/settings` **before** the claim.
 2. The finder claims; the 5-minute window is locked into that item.
-3. Admin restores `setConfig(minReward, claimStake, 259200)` straight away. The claimed item keeps 5 minutes.
+3. Admin sets it back to 3 days straight away. The claimed item keeps 5 minutes.
 4. After 5 minutes of chain time the finder's item page and `/me` show "Collect reward".
 
 ### Live check on `sepolia-v1` (4 Oct 2026, blocks 11841054–11841148)
@@ -226,3 +225,76 @@ read-only key and safe in the browser. With no dedicated gateway set, the app us
 Checked live on 4 Oct 2026: Student A posted #6 with a photo through the UI
 ([`0xba2558c3…29ed45`](https://sepolia.etherscan.io/tx/0xba2558c36dafecd7eba46f2ed55363e9a590532254150739a80a4dc66929ed45));
 its metadata and photo both loaded from the dedicated gateway (200).
+
+## Admin console (Phase 9)
+
+`/admin` is for Clerk users whose `publicMetadata.role` is `admin` or `arbiter` (set in the Clerk dashboard →
+Users). Arbiters see Disputes only; admins see every tab. Each page re-checks the role from Clerk on the
+server, and every `/api/admin/*` route checks it again.
+
+| Tab       | Who            | Does                                                                                         |
+| --------- | -------------- | -------------------------------------------------------------------------------------------- |
+| Overview  | admin          | Contract, pause state, rules, totals, verifier wallet balance (warns below 0.02 ETH), queues |
+| Students  | admin          | Search by email or wallet, filter by status, Remove (revoke) and Retry failed activations    |
+| Disputes  | admin, arbiter | Every Disputed item with both emails, details and history; Pay the finder / Return to owner  |
+| Settings  | admin          | Minimum reward, deposit and response window (`setConfig`); Pause / Resume (type PAUSE)       |
+| Audit log | admin          | `admin_actions`, newest first, with notes and transaction links                              |
+
+Contract writes (dispute decisions, settings, pause) are sent from the staff member's own MetaMask through
+`useTxFlow`, so a staff account needs:
+
+1. The role in Clerk `publicMetadata.role`.
+2. A linked MetaMask wallet (onboarding step 3, or added in the Clerk dashboard) that holds the matching
+   on-chain role: `ARBITER_ROLE` for dispute decisions, `DEFAULT_ADMIN_ROLE` for settings and pause. On
+   `sepolia-v1` those are the Arbiter and Admin wallets from the accounts table. The console says which
+   wallet holds the role when the connected one doesn't.
+
+Once the transaction is mined, the browser posts it to `POST /api/admin/actions`. The server saves the audit
+entry only if the receipt is a successful call to the contract, sent from the caller's linked wallet, with
+the matching event (`DisputeResolved`, `ConfigUpdated`, `Paused`, `Unpaused`). If that save fails, the
+console keeps the dispute and its note on screen with "Save again" until the entry is saved. Each
+transaction is recorded once (unique index on `admin_actions.tx_hash`); apply that migration with
+`pnpm --filter web db:migrate` before deploying this version. Remove and Retry on the Students tab are sent by the
+server's verifier wallet (the contract gives `revokeStudent` to `VERIFIER_ROLE`), and the API writes their
+audit entries.
+
+If a role is moved to a Safe multi-sig (a role holder with contract code), the console shows "Propose in
+Safe" with the contract address, value 0 and the encoded calldata instead of sending a transaction. On
+4 Oct 2026 the Admin and Arbiter role holders on `sepolia-v1` were plain wallets (no code), so the console
+writes directly.
+
+### Pausing
+
+Settings → "Pause posting and claiming", type `PAUSE`. While paused, a banner runs across the admin area,
+`/post` disables "Post and lock reward", item pages replace "I found this" with a note, `/api/upload` answers
+409, and the contract reverts `postItem` and `claimItem` with `EnforcedPause`. Returns, disputes,
+collecting and withdrawals keep working. Resume from the same section.
+
+### Live check on `sepolia-v1` (4 Oct 2026, blocks 11841447–11841534)
+
+Run through the web UI (dev server) as Clerk test users `p9-arbiter+clerk_test@gmail.com` (role arbiter,
+Arbiter wallet linked) and `p9-admin+clerk_test@gmail.com` (role admin, Admin wallet linked), with the
+test-only injected wallet from Phase 8 signing with the keystore keys. The disputed items were set up by
+script with Student A and B.
+
+| Step                                                        | Transaction                                                                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Student A posts #7, Student B claims it and opens a dispute | [`0x3cf460c2…50ec92`](https://sepolia.etherscan.io/tx/0x3cf460c21fa300b1bca2e50571b41760cbf74d5027b7db265c4fe17907a0ee92) |
+| Student B posts #8, Student A claims it and opens a dispute | [`0x88e3118a…1b8210`](https://sepolia.etherscan.io/tx/0x88e3118a2dccf9a1ac9c1247fff59edbf2a4b07ec0ba2cfbb7be4b5b031b8210) |
+| Arbiter: Pay the finder on #7 (with note)                   | [`0x75b2a0e6…cf646a`](https://sepolia.etherscan.io/tx/0x75b2a0e6a46b3581466a5c60556f5b39522ee6a59d330c27aca5a38ed4cf646a) |
+| Arbiter: Return to owner on #8 (with note)                  | [`0x4cb404d9…131016`](https://sepolia.etherscan.io/tx/0x4cb404d964ec0adda7cdfb4783be3736c678c3d615a4cee5cf321dfb94131016) |
+| Admin: Pause (typed PAUSE)                                  | [`0xf5a5fe7a…00c95a`](https://sepolia.etherscan.io/tx/0xf5a5fe7a591aa07da5de14996252025a8539c569a803dba6adb44c262500c95a) |
+| Admin: Resume                                               | [`0xb5e0017c…cedc63`](https://sepolia.etherscan.io/tx/0xb5e0017cd055bf76d59ad64334a75eaf571448d3bdd722ed596c1974e0cedc63) |
+| Admin: response window 3 days → 1 day                       | [`0x7715e25f…9bb3b3`](https://sepolia.etherscan.io/tx/0x7715e25ff70a3da6925545095fc754bc3559aff0dbf94ed7c6db46403a9bb3b3) |
+| Admin: response window back to 3 days                       | [`0x5025350b…854a95`](https://sepolia.etherscan.io/tx/0x5025350bdfc21b148a15b50e85c4bba4188d289eb41c09e318dde03d44854a95) |
+| Student B posts #9, Student A claims it and opens a dispute | [`0x94af4142…ad3852`](https://sepolia.etherscan.io/tx/0x94af414220116b1a1d5de813f9f7c9e135a627a7b3fb40cac14c387bc3ad3852) |
+| Arbiter: Pay the finder on #9 (with note)                   | [`0x49db76ce…5f5866`](https://sepolia.etherscan.io/tx/0x49db76ce7cf0ab514069bcede6e6f205e9a3f43328a1f0fe7c9cfefdef5f5866) |
+
+Also checked: a decision without a 10-character note is refused before MetaMask opens; a MetaMask
+rejection shows "Cancelled in MetaMask."; while paused, `/post` showed the paused note with "Post and
+lock reward" disabled, item #6 showed the note instead of "I found this", `/api/upload` answered 409, and
+simulating `postItem` and `claimItem` reverted with `EnforcedPause`; the Admin wallet on Disputes is told
+it doesn't hold the arbiter role and which wallet does; the confirm button stays disabled until `PAUSE` is
+typed exactly; a window of 4 minutes is refused with the 5 minutes to 14 days bound; all seven actions
+appear in the audit log with their notes; Overview warned that the verifier wallet (0.0018 ETH) is below
+0.02 ETH; no console errors; no horizontal scroll at 360 px.

@@ -3,6 +3,7 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { getAddress } from "viem";
+import { WEBHOOK_ACTOR } from "@/lib/admin";
 import { errorResponse, handler, json } from "@/lib/api";
 import { fromUserJson, primaryVerifiedEmail } from "@/lib/clerk-user";
 import { adminActions, getDb, students } from "@/lib/db";
@@ -60,7 +61,7 @@ export const POST = handler(async (request: NextRequest) => {
         .set({ status: "revoked", revokedAt: new Date(), error: null })
         .where(eq(students.clerkUserId, id));
       await db.insert(adminActions).values({
-        actorClerkId: "clerk-webhook",
+        actorClerkId: WEBHOOK_ACTOR,
         action: "revoke_student",
         target: id,
         txHash,

@@ -8,6 +8,13 @@
       "when": 1791086627842,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791109154811,
+      "tag": "0001_admin_actions_tx_hash_unique",
+      "breakpoints": true
     }
   ]
 }

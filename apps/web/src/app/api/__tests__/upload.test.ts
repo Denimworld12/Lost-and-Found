@@ -15,6 +15,12 @@ vi.mock("@/lib/pinata", () => ({
   pinJson: (...args: unknown[]) => pinJson(...args),
 }));
 
+const readPaused = vi.fn();
+vi.mock("@/lib/contract", async (original) => ({
+  ...(await original<typeof import("@/lib/contract")>()),
+  readPaused: () => readPaused(),
+}));
+
 let db = fakeDb();
 vi.mock("@/lib/db", async (original) => ({
   ...(await original<typeof import("@/lib/db/schema")>()),
@@ -49,9 +55,24 @@ beforeEach(() => {
   requireVerifiedStudent.mockResolvedValue({ user: { id: "user_1" } });
   pinImage.mockResolvedValue(IMAGE_CID);
   pinJson.mockResolvedValue(META_CID);
+  readPaused.mockResolvedValue(false);
 });
 
 describe("POST /api/upload", () => {
+  it("refuses uploads while the admins have paused posting", async () => {
+    readPaused.mockResolvedValue(true);
+    const response = await POST(form(details));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "CONFLICT",
+        message: "Posting and claiming are paused by the admins right now.",
+      },
+    });
+    expect(pinJson).not.toHaveBeenCalled();
+    expect(db.calls).toEqual([]);
+  });
+
   it("is refused for anyone who isn't a verified student", async () => {
     requireVerifiedStudent.mockRejectedValue(
       new ApiError(

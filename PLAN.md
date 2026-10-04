@@ -507,13 +507,13 @@ States: `idle → checking → awaitingWallet → pending → confirmed | failed
 
 ## Phase 9 — Admin console (`/admin`)
 
-- [ ] **Overview**: contract address, paused state, config values, totals from `Stats`, verifier wallet balance (warn below 0.02 ETH)
-- [ ] **Students**: table (email, wallet, status, verified date), search, revoke, retry failed
-- [ ] **Disputes** (admin + arbiter): list of Disputed items with both parties' emails, item metadata, event history; buttons "Pay the finder" / "Return to owner" → `resolveDispute`, each with a required note saved to `admin_actions`
-- [ ] **Settings** (admin): edit `minReward`, `claimStake`, `confirmWindow` with bounds shown → `setConfig`; Pause / Unpause with a typed confirmation ("PAUSE")
-- [ ] **Audit log**: `admin_actions` newest first
-- [ ] Every admin write goes through `useTxFlow`; the connected wallet must hold the needed on-chain role (check `hasRole` and explain if not)
-- [ ] If the admin role is a Safe multi-sig, show "Propose in Safe" with the encoded calldata instead of a direct write
+- [x] **Overview**: contract address, paused state, config values, totals from `Stats`, verifier wallet balance (warn below 0.02 ETH)
+- [x] **Students**: table (email, wallet, status, verified date), search, revoke, retry failed
+- [x] **Disputes** (admin + arbiter): list of Disputed items with both parties' emails, item metadata, event history; buttons "Pay the finder" / "Return to owner" → `resolveDispute`, each with a required note saved to `admin_actions`
+- [x] **Settings** (admin): edit `minReward`, `claimStake`, `confirmWindow` with bounds shown → `setConfig`; Pause / Unpause with a typed confirmation ("PAUSE")
+- [x] **Audit log**: `admin_actions` newest first
+- [x] Every admin write goes through `useTxFlow`; the connected wallet must hold the needed on-chain role (check `hasRole` and explain if not)
+- [x] If the admin role is a Safe multi-sig, show "Propose in Safe" with the encoded calldata instead of a direct write
 
 **Done when:** an arbiter resolves a dispute end to end, admin pause blocks posting in the UI and on-chain, all actions appear in the audit log.
 

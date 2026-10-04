@@ -27,10 +27,11 @@ export function ConfirmDialog({
   danger = false,
   confirmDisabled = false,
   onConfirm,
+  open,
   onOpenChange,
 }: {
-  /** The button that opens the dialog (rendered as the trigger). */
-  trigger: ReactNode;
+  /** The button that opens the dialog (rendered as the trigger). Leave out with `open`. */
+  trigger?: ReactNode;
   title: string;
   children: ReactNode;
   confirmLabel: string;
@@ -39,11 +40,13 @@ export function ConfirmDialog({
   danger?: boolean;
   confirmDisabled?: boolean;
   onConfirm: () => void;
+  /** Controlled: open the dialog from code (e.g. after a form check passes). */
+  open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
   return (
-    <AlertDialog onOpenChange={onOpenChange}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

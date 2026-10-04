@@ -23,6 +23,7 @@ import {
   ownTxHashes,
   RECEIPT_TIMEOUT_MESSAGE,
   REVERTED_MESSAGE,
+  missingRoleMessage,
   WRONG_CHAIN_MESSAGE,
   wrongWalletMessage,
   type TxFlowDeps,
@@ -72,6 +73,7 @@ function deps(overrides: Partial<TxFlowDeps> = {}): TxFlowDeps {
     estimateGas: vi.fn(async () => 100_000n),
     maxFeePerGas: vi.fn(async () => 2_000_000_000n),
     getBalance: vi.fn(async () => 10n ** 18n),
+    hasRole: vi.fn(async () => true),
     simulate: vi.fn(async () => ({ prepared: true })),
     write: vi.fn(async () => HASH),
     waitForReceipt: vi.fn(async () => receipt("success")),
@@ -339,5 +341,36 @@ describe("executeTx", () => {
       prepared: false,
       error: "You can upload 5 items an hour. Try again later.",
     });
+  });
+
+  it("checks the required on-chain role before simulating", async () => {
+    const ARBITER_ROLE = `0x${"12".repeat(32)}` as Hash;
+    const resolve: TxRequest = {
+      functionName: "resolveDispute",
+      args: [1n, true],
+      itemId: 1n,
+      successMessage: "Dispute resolved",
+      requiredRole: { role: ARBITER_ROLE, label: "arbiter" },
+    };
+
+    const holder = deps();
+    expect((await run(holder, resolve)).result.state).toBe("confirmed");
+    expect(holder.hasRole).toHaveBeenCalledWith(ARBITER_ROLE, STUDENT);
+
+    const outsider = deps({ hasRole: vi.fn(async () => false) });
+    const { result } = await run(outsider, resolve);
+    expect(result).toMatchObject({
+      state: "failed",
+      error: missingRoleMessage(STUDENT, "arbiter"),
+    });
+    expect(result.error).toContain("arbiter role");
+    expect(outsider.simulate).not.toHaveBeenCalled();
+    expect(outsider.write).not.toHaveBeenCalled();
+  });
+
+  it("skips the role check for student writes", async () => {
+    const d = deps({ hasRole: vi.fn(async () => false) });
+    expect((await run(d)).result.state).toBe("confirmed");
+    expect(d.hasRole).not.toHaveBeenCalled();
   });
 });
