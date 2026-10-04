@@ -3,8 +3,8 @@ import { EmptyState } from "@/components/item/empty-state";
 import { Button } from "@/components/ui/button";
 
 /**
- * Placeholder for routes that need sign-in (Phase 7 onwards), so links from the shell and
- * the bottom nav land somewhere useful instead of a 404.
+ * Placeholder for verified-student routes built in Phase 8, so links from the shell and the
+ * bottom nav land somewhere useful instead of a 404.
  */
 export function ComingSoon({
   heading,

@@ -130,6 +130,21 @@ export async function readItems(
   return items;
 }
 
+// ─────────────────────────────────────────────────────────────── Students
+
+/** Whether the contract accepts posts and claims from this wallet. */
+export async function readIsVerified(
+  student: Address,
+  publicClient = getPublicClient(),
+): Promise<boolean> {
+  return publicClient.readContract({
+    address: lostAndFound.address,
+    abi: lostAndFound.abi,
+    functionName: "isVerified",
+    args: [student],
+  });
+}
+
 // ─────────────────────────────────────────────────────────────── Config and totals
 
 export interface ContractConfig {

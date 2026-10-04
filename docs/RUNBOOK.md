@@ -122,3 +122,38 @@ First run on `sepolia-v1` (item #1, blocks 11836911–11836918):
 | Student B `claimItem(1)` (0.0005 ETH) | [`0x21231b73…bb0ad7`](https://sepolia.etherscan.io/tx/0x21231b73da76e79b633fa302ab8d1e86e5a6b1beff24fcb9635ccec9e9bb0ad7) |
 | Student A `confirmReturn(1)`          | [`0xe050981b…eff8a0`](https://sepolia.etherscan.io/tx/0xe050981b61061209563a9747dbf0dde59c1b0b30f8816ff9267a45bf67eff8a0) |
 | Student B `withdraw` (0.0015 ETH)     | [`0x42eda536…02a6a4`](https://sepolia.etherscan.io/tx/0x42eda5364b699faf2a699d3fbbde5858ade30bcbdb4a3551e5849ca1ac02a6a4) |
+
+## Authentication and student verification
+
+Values for `apps/web/.env.local` (git-ignored; Vercel env vars in production). Never paste them into chat.
+
+| Variable                                                | Source                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk dashboard → API keys                                                                               |
+| `CLERK_WEBHOOK_SIGNING_SECRET`                          | Clerk dashboard → Webhooks, after registering `https://<domain>/api/webhooks/clerk` (needs a public URL) |
+| `VERIFIER_PRIVATE_KEY`                                  | `pnpm --filter contracts exec hardhat keystore get --dev VERIFIER_PRIVATE_KEY`                           |
+| `DATABASE_URL`                                          | Neon pooled connection string                                                                            |
+| `PINATA_JWT`, `NEXT_PUBLIC_PINATA_GATEWAY`              | Pinata API key (JWT) and dedicated gateway host                                                          |
+| `ALLOWED_EMAIL_DOMAIN`                                  | College email domain, e.g. `yourcollege.edu.in` (comma-separate extra domains)                           |
+
+Clerk dashboard settings the code relies on:
+
+1. Google and Email (verification code) sign-in on, password off, email required.
+2. Web3 → MetaMask on.
+3. Sessions → Customize session token: `{ "metadata": "{{user.public_metadata}}", "email": "{{user.primary_email_address}}" }`.
+4. Webhooks: `user.created`, `user.updated`, `user.deleted` to `/api/webhooks/clerk`.
+5. Paths: sign-in `/sign-in`, sign-up `/sign-up`, after sign-up `/onboarding`.
+6. Users → set `publicMetadata.role` to `"admin"` or `"arbiter"` for staff.
+
+Database:
+
+```bash
+pnpm --filter web db:generate # after editing src/lib/db/schema.ts; commit apps/web/drizzle/
+pnpm --filter web db:migrate  # applies migrations to DATABASE_URL
+```
+
+The verifier wallet pays gas for every `verifyStudent` and `revokeStudent` (about 50,000 gas each). Keep at
+least 0.01 Sepolia ETH on it. A verification that failed (out of gas, RPC down) shows as `failed` in
+`students`; once the wallet is funded the student can press "Try again" in onboarding, or an admin can call
+`POST /api/admin/students/<clerk user id>/retry`. Verifier sends are serialised across server instances by
+Postgres advisory lock 42.
