@@ -488,18 +488,18 @@ States: `idle → checking → awaitingWallet → pending → confirmed | failed
 
 ### Flows to build (screens in UI_SPEC)
 
-- [ ] **Post** (`/post`): 4-step form (details → photo → reward → review). Upload on step 4 submit, then `postItem(cid)` with `value = parseEther(reward)`. Keep the form in memory if the transaction fails so nothing is retyped. Redirect to the new item page using the `ItemPosted` event's `id` from the receipt logs (`parseEventLogs`)
-- [ ] **Claim** (item page): confirmation dialog explaining the stake and that it's lost if the claim is rejected → `claimItem(id)` with `value = claimStake` read from the contract at that moment
-- [ ] **Confirm return** (owner): dialog "Did you get it back?" → `confirmReturn`
-- [ ] **Reject claim** (owner, within window): dialog warns the finder loses the deposit → `rejectClaim`
-- [ ] **Dispute** (owner or finder, within window): dialog with what happens next → `raiseDispute`
-- [ ] **Collect after timeout** (finder, window passed): `claimAfterTimeout`
-- [ ] **Cancel** (owner, Open): `cancelItem`
-- [ ] **Withdraw** (`/me` and header balance chip): `withdraw`
-- [ ] **Contact reveal**: after a claim, owner and finder see "Contact {email}" via `/api/items/[id]/contact`
-- [ ] **Countdown** on Claimed items: time left in the confirm window, computed from `claimedAt + claimWindow` vs the latest block timestamp (not the device clock)
-- [ ] **Live updates**: `useWatchContractEvent` on the item page for that item's events → invalidate queries
-- [ ] **/me dashboard**: tabs "Needs your action", "Items I lost", "Items I found", "History"; withdrawable balance card
+- [x] **Post** (`/post`): 4-step form (details → photo → reward → review). Upload on step 4 submit, then `postItem(cid)` with `value = parseEther(reward)`. Keep the form in memory if the transaction fails so nothing is retyped. Redirect to the new item page using the `ItemPosted` event's `id` from the receipt logs (`parseEventLogs`)
+- [x] **Claim** (item page): confirmation dialog explaining the stake and that it's lost if the claim is rejected → `claimItem(id)` with `value = claimStake` read from the contract at that moment
+- [x] **Confirm return** (owner): dialog "Did you get it back?" → `confirmReturn`
+- [x] **Reject claim** (owner, within window): dialog warns the finder loses the deposit → `rejectClaim`
+- [x] **Dispute** (owner or finder, within window): dialog with what happens next → `raiseDispute`
+- [x] **Collect after timeout** (finder, window passed): `claimAfterTimeout`
+- [x] **Cancel** (owner, Open): `cancelItem`
+- [x] **Withdraw** (`/me` and header balance chip): `withdraw`
+- [x] **Contact reveal**: after a claim, owner and finder see "Contact {email}" via `/api/items/[id]/contact`
+- [x] **Countdown** on Claimed items: time left in the confirm window, computed from `claimedAt + claimWindow` vs the latest block timestamp (not the device clock)
+- [x] **Live updates**: `useWatchContractEvent` on the item page for that item's events → invalidate queries
+- [x] **/me dashboard**: tabs "Needs your action", "Items I lost", "Items I found", "History"; withdrawable balance card
 
 **Done when:** all flows pass manually on Sepolia with Student A and Student B, including reject → reclaim, dispute both outcomes, and timeout (admin sets `confirmWindow` to 5 minutes before the claim is made, then restores it).
 

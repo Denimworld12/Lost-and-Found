@@ -185,6 +185,61 @@ export async function getItemsByUser(
   };
 }
 
+/** One row in a student's dashboard history: an item event or a withdrawal. */
+export interface UserActivity {
+  kind: ItemEventKind | "Withdrawn";
+  itemId: bigint | null;
+  actor: Address | null;
+  amount: bigint | null;
+  finderWins?: boolean;
+  txHash: `0x${string}`;
+  timestamp: bigint | null;
+}
+
+/**
+ * Contract events involving `address`, newest first: events it sent or received (owner,
+ * finder, disputer, withdrawal) and events on items it posted or claimed (`itemIds`).
+ */
+export async function getUserHistory(
+  address: Address,
+  itemIds: readonly bigint[],
+  limit = 50,
+): Promise<{ events: UserActivity[]; complete: boolean }> {
+  const ids = new Set(itemIds.map((id) => id.toString()));
+  const involves = (event: ContractEvent) => {
+    if (event.itemId !== null && ids.has(event.itemId.toString())) return true;
+    return ["owner", "finder", "by", "to"].some((key) => {
+      const value = event.args[key];
+      return (
+        typeof value === "string" && isAddressEqual(value as Address, address)
+      );
+    });
+  };
+  const { events, complete } = await scanEvents({
+    limit,
+    filter: (event) =>
+      (event.name in ITEM_EVENT_KINDS || event.name === "Withdrawn") &&
+      involves(event),
+  });
+  return {
+    events: events.map((event) => {
+      if (event.name === "Withdrawn") {
+        return {
+          kind: "Withdrawn",
+          itemId: null,
+          actor: (event.args.to as Address | undefined) ?? null,
+          amount: (event.args.amount as bigint | undefined) ?? null,
+          txHash: event.txHash,
+          timestamp: event.timestamp,
+        };
+      }
+      const itemEvent = toItemEvent(event)!;
+      return { ...itemEvent, itemId: event.itemId };
+    }),
+    complete,
+  };
+}
+
 export interface Stats {
   itemsPosted: bigint;
   itemsReturned: bigint;

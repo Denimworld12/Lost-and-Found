@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,18 +9,24 @@ import { cn } from "@/lib/utils";
 import { AccountControls } from "./account-controls";
 import { Logo } from "./logo";
 import { MobileMenu } from "./mobile-menu";
+import { NeedsBadge, useNeedsCount } from "./needs-badge";
 import { isActivePath, NAV_LINKS } from "./nav";
 
 /** Sticky 60px Obsidian nav. Under 768px: logo + menu button; the bottom nav takes the links. */
 export function SiteHeader() {
   const pathname = usePathname();
+  const { isSignedIn } = useAuth();
+  const needs = useNeedsCount();
+  const links = isSignedIn
+    ? [...NAV_LINKS, { href: "/me", label: "My items" } as const]
+    : NAV_LINKS;
   return (
     <header className="sticky top-0 z-40 border-b border-charcoal bg-obsidian">
       <div className="page-x flex h-60 items-center gap-24">
         <Logo compact />
         <nav aria-label="Main" className="hidden flex-1 md:block">
           <ul className="flex items-center gap-28">
-            {NAV_LINKS.map((link) => {
+            {links.map((link) => {
               const active = isActivePath(pathname, link.href);
               return (
                 <li key={link.href}>
@@ -34,6 +41,9 @@ export function SiteHeader() {
                     )}
                   >
                     {link.label}
+                    {link.href === "/me" && (
+                      <NeedsBadge count={needs} className="ml-7" />
+                    )}
                   </Link>
                 </li>
               );

@@ -1,15 +1,24 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import type { Item } from "@clf/shared";
 import { ArrowLeftIcon } from "lucide-react";
+import { isAddressEqual, type Address } from "viem";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useChainTime } from "@/hooks/useChainData";
 import { useItem } from "@/hooks/useItem";
+import { useItemEvents } from "@/hooks/useItemEvents";
+import { useLinkedWallet } from "@/hooks/useLinkedWallet";
 import { useMetadata } from "@/hooks/useMetadata";
+import { useIsVerified, useWithdrawable } from "@/hooks/useWallet";
 import { formatDay } from "@/lib/format";
+import { viewerRole, type ViewerRole } from "@/lib/item-actions";
+import { ActionBar } from "./action-bar";
 import { AddressChip } from "./address-chip";
+import { ContactCard } from "./contact-card";
 import { Countdown } from "./countdown";
 import { itemTitle } from "./item-card";
 import { ItemHistory } from "./item-history";
@@ -30,10 +39,36 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Item page body: photo, status, on-chain facts, metadata and history. Read-only for now. */
+/** Who the viewer is for this item; `null` until Clerk and the on-chain check have loaded. */
+function useViewerRole(item: Item): ViewerRole | null {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { wallet: linkedWallet } = useLinkedWallet();
+  const verified = useIsVerified(linkedWallet);
+  if (!isLoaded) return null;
+  if (isSignedIn && linkedWallet && verified.isPending) return null;
+  return viewerRole(item, {
+    signedIn: Boolean(isSignedIn),
+    linkedWallet,
+    verifiedWallet: verified.data ? linkedWallet : null,
+  });
+}
+
+function isYou(address: Address, wallet: Address | null): boolean {
+  return wallet !== null && isAddressEqual(address, wallet);
+}
+
+/**
+ * Item page body: photo, status, on-chain facts, metadata, the viewer's actions, contact
+ * details after a claim, and history. Contract events for this item refresh it live.
+ */
 export function ItemDetail({ initialItem }: { initialItem: Item }) {
   const { data } = useItem(initialItem.id, initialItem);
   const item = data ?? initialItem;
+  useItemEvents(item.id);
+  const role = useViewerRole(item);
+  const { wallet: linkedWallet } = useLinkedWallet();
+  const withdrawable = useWithdrawable(linkedWallet);
+  const chainNow = useChainTime(15_000);
   const {
     data: metadata,
     isPending: metadataPending,
@@ -115,14 +150,20 @@ export function ItemDetail({ initialItem }: { initialItem: Item }) {
               )
             )}
             <Fact label="Posted by">
-              <AddressChip address={item.owner} />
+              <AddressChip
+                address={item.owner}
+                isYou={isYou(item.owner, linkedWallet)}
+              />
             </Fact>
             <Fact label="Posted">
               <LocalTime seconds={item.createdAt} format="datetime" />
             </Fact>
             {item.finder && (
               <Fact label="Claimed by">
-                <AddressChip address={item.finder} />
+                <AddressChip
+                  address={item.finder}
+                  isYou={isYou(item.finder, linkedWallet)}
+                />
               </Fact>
             )}
             {item.status === "Claimed" && item.claimedAt !== null && (
@@ -131,6 +172,18 @@ export function ItemDetail({ initialItem }: { initialItem: Item }) {
               </Fact>
             )}
           </dl>
+
+          {role === null ? (
+            <Skeleton className="h-44 w-200 rounded-pill" />
+          ) : (
+            <ActionBar
+              item={item}
+              role={role}
+              chainNow={chainNow}
+              withdrawable={withdrawable.data ?? 0n}
+            />
+          )}
+          {role && <ContactCard item={item} role={role} />}
         </div>
       </div>
 

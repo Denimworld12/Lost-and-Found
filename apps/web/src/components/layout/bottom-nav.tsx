@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { MobileMenuContent } from "./mobile-menu";
+import { NeedsBadge, useNeedsCount } from "./needs-badge";
 import { isActivePath } from "./nav";
 
 const itemClass =
@@ -17,11 +18,13 @@ function NavItem({
   label,
   icon,
   pathname,
+  badge = 0,
 }: {
   href: string;
   label: string;
   icon: ReactNode;
   pathname: string;
+  badge?: number;
 }) {
   const active = isActivePath(pathname, href);
   return (
@@ -36,7 +39,10 @@ function NavItem({
             : "border-transparent text-snow",
         )}
       >
-        {icon}
+        <span className="relative">
+          {icon}
+          <NeedsBadge count={badge} className="absolute -top-7 left-14" />
+        </span>
         {label}
       </Link>
     </li>
@@ -47,6 +53,7 @@ function NavItem({
 export function BottomNav() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const needs = useNeedsCount();
   return (
     <nav
       aria-label="Quick links"
@@ -70,6 +77,7 @@ export function BottomNav() {
           label="Me"
           icon={<UserIcon aria-hidden="true" />}
           pathname={pathname}
+          badge={needs}
         />
         <li className="flex flex-1">
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
