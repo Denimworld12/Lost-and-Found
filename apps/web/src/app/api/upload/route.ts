@@ -1,6 +1,7 @@
 import { and, count, eq, gt, sql } from "drizzle-orm";
 import { ApiError, handler, json, parse } from "@/lib/api";
 import { requireVerifiedStudent } from "@/lib/auth";
+import { readPaused } from "@/lib/contract";
 import { getDb, uploads } from "@/lib/db";
 import { MAX_IMAGE_BYTES, processImage } from "@/lib/images";
 import { itemDetailsSchema, type ItemMetadata } from "@/lib/ipfs";
@@ -19,6 +20,14 @@ const MAX_BODY_BYTES = MAX_IMAGE_BYTES + 64 * 1024;
  */
 export const POST = handler(async (request: Request) => {
   const { user } = await requireVerifiedStudent();
+  // The contract refuses posts while paused; don't pin files that can never be used.
+  if (await readPaused()) {
+    throw new ApiError(
+      409,
+      "CONFLICT",
+      "Posting and claiming are paused by the admins right now.",
+    );
+  }
 
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (declared > MAX_BODY_BYTES) {

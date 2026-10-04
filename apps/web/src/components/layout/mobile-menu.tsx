@@ -13,7 +13,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { isActivePath, NAV_LINKS } from "./nav";
+import { useRole } from "@/hooks/useRole";
+import { ADMIN_LINK, isActivePath, isStaff, NAV_LINKS } from "./nav";
 
 /** Carbon sheet from the right with every page link. `children` is the trigger. */
 export function MobileMenu({ children }: { children: ReactNode }) {
@@ -37,7 +38,12 @@ export function MobileMenuContent({
   pathname: string;
   onNavigate: () => void;
 }) {
-  const links = [{ href: "/", label: "Home" }, ...NAV_LINKS];
+  const { isSignedIn, role } = useRole();
+  const links = [
+    { href: "/", label: "Home" },
+    ...NAV_LINKS,
+    ...(isSignedIn && isStaff(role) ? [ADMIN_LINK] : []),
+  ];
   return (
     <SheetContent side="right">
       <SheetHeader>

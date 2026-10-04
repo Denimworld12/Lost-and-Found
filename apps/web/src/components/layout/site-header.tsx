@@ -5,21 +5,25 @@ import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import { AccountControls } from "./account-controls";
 import { Logo } from "./logo";
 import { MobileMenu } from "./mobile-menu";
 import { NeedsBadge, useNeedsCount } from "./needs-badge";
-import { isActivePath, NAV_LINKS } from "./nav";
+import { ADMIN_LINK, isActivePath, isStaff, NAV_LINKS } from "./nav";
 
 /** Sticky 60px Obsidian nav. Under 768px: logo + menu button; the bottom nav takes the links. */
 export function SiteHeader() {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
+  const { role } = useRole();
   const needs = useNeedsCount();
-  const links = isSignedIn
-    ? [...NAV_LINKS, { href: "/me", label: "My items" } as const]
-    : NAV_LINKS;
+  const links = [
+    ...NAV_LINKS,
+    ...(isSignedIn ? [{ href: "/me", label: "My items" } as const] : []),
+    ...(isSignedIn && isStaff(role) ? [ADMIN_LINK] : []),
+  ];
   return (
     <header className="sticky top-0 z-40 border-b border-charcoal bg-obsidian">
       <div className="page-x flex h-60 items-center gap-24">

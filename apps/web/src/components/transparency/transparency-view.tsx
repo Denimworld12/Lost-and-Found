@@ -21,7 +21,7 @@ import { lostAndFound, type ContractEvent } from "@/lib/contract";
 import { formatDuration, formatEthValue, shortAddress } from "@/lib/format";
 import { CHAIN_FALLBACK_LIMIT } from "@/lib/graph";
 
-function Panel({
+export function Panel({
   title,
   id,
   children,
@@ -43,7 +43,13 @@ function Panel({
   );
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+export function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-4 border-t border-charcoal pt-12 first:border-t-0 first:pt-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-16">
       <dt className="text-body-sm text-cloud">{label}</dt>
@@ -52,7 +58,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Unavailable({
+export function Unavailable({
   onRetry,
   children,
 }: {
@@ -69,7 +75,7 @@ function Unavailable({
   );
 }
 
-function RowsSkeleton({ rows }: { rows: number }) {
+export function RowsSkeleton({ rows }: { rows: number }) {
   return (
     <div aria-hidden="true" className="flex flex-col gap-16">
       {Array.from({ length: rows }, (_, index) => (
@@ -82,7 +88,7 @@ function RowsSkeleton({ rows }: { rows: number }) {
   );
 }
 
-function ContractPanel() {
+export function ContractPanel() {
   const source = sourceCodeUrl(lostAndFound.address);
   return (
     <Panel title="Contract" id="contract-title">
@@ -123,7 +129,7 @@ function ContractPanel() {
   );
 }
 
-function ConfigPanel() {
+export function ConfigPanel() {
   const { data, isPending, isError, refetch } = useContractConfig();
   return (
     <Panel title="Current rules" id="config-title">
@@ -156,7 +162,7 @@ function ConfigPanel() {
   );
 }
 
-function TotalsPanel() {
+export function TotalsPanel() {
   const stats = useStats();
   const totals = useContractTotals();
   const pending = stats.isPending || totals.isPending;

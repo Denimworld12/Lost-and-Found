@@ -286,7 +286,10 @@ export function PostWizard() {
               <Button onClick={() => continueFrom(step)}>Continue</Button>
             ) : (
               <WalletGate>
-                <Button onClick={submit} disabled={flow.busy}>
+                <Button
+                  onClick={submit}
+                  disabled={flow.busy || config.data?.paused === true}
+                >
                   Post and lock reward
                 </Button>
               </WalletGate>

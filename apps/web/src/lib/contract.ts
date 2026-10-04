@@ -180,6 +180,17 @@ export async function readConfig(
   };
 }
 
+/** Whether the admins have paused posting and claiming. */
+export async function readPaused(
+  publicClient = getPublicClient(),
+): Promise<boolean> {
+  return publicClient.readContract({
+    address: lostAndFound.address,
+    abi: lostAndFound.abi,
+    functionName: "paused",
+  });
+}
+
 export interface ContractTotals {
   itemCount: bigint;
   /** ETH currently held for open and claimed items. */

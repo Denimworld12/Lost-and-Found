@@ -127,6 +127,10 @@ export const CONTRACT_ERROR_MESSAGES: Record<string, Message> = {
   TransferFailed: "The transfer to your wallet failed. Try again.",
   AccessControlUnauthorizedAccount:
     "Your wallet doesn't have permission to do that.",
+  // Admin console writes.
+  InvalidConfig:
+    "Those settings are outside the allowed range. Check the limits under each field.",
+  ExpectedPause: "Posting and claiming are already open.",
 };
 
 export const INSUFFICIENT_FUNDS_MESSAGE =

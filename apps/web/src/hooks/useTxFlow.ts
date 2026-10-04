@@ -45,6 +45,9 @@ export function txQueryKeys(itemId: bigint | undefined, account: Address) {
     ["balance"],
     ["stats"],
     ["contract-totals"],
+    // Admin writes: pause state and settings. The admin console refreshes its own lists
+    // once the action is in the audit log.
+    ["contract-config"],
     ["chain-time-offset"],
   ] as const;
 }
@@ -117,6 +120,13 @@ export function useTxFlow() {
         },
         getBalance: async (address) =>
           (await getBalance(config, { address, chainId: appChain.id })).value,
+        hasRole: (role, account) =>
+          getPublicClient(config, { chainId: appChain.id }).readContract({
+            address: lostAndFound.address,
+            abi: lostAndFound.abi,
+            functionName: "hasRole",
+            args: [role, account],
+          }),
         simulate: async (call) =>
           (await simulateContract(config, contractCall(call) as never)).request,
         write: (request) => writeContract(config, request as never),

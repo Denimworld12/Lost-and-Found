@@ -123,9 +123,7 @@ const PRIVATE_KEY = /^0x[0-9a-fA-F]{64}$/;
 
 let verifier: Verifier | undefined;
 
-/** The app's verifier: `VERIFIER_PRIVATE_KEY` with viem's nonce manager, locked by Postgres. */
-export function getVerifier(): Verifier {
-  if (verifier) return verifier;
+function verifierKey(): Hash {
   const raw = serverEnv.verifierPrivateKey();
   const key = raw.startsWith("0x") ? raw : `0x${raw}`;
   if (!PRIVATE_KEY.test(key)) {
@@ -136,7 +134,18 @@ export function getVerifier(): Verifier {
       "VERIFIER_PRIVATE_KEY is not a 32-byte hex key",
     );
   }
-  const account = privateKeyToAccount(key as Hash, { nonceManager });
+  return key as Hash;
+}
+
+/** The verifier wallet's public address (it pays gas for every activation). */
+export function verifierAddress(): Address {
+  return privateKeyToAccount(verifierKey()).address;
+}
+
+/** The app's verifier: `VERIFIER_PRIVATE_KEY` with viem's nonce manager, locked by Postgres. */
+export function getVerifier(): Verifier {
+  if (verifier) return verifier;
+  const account = privateKeyToAccount(verifierKey(), { nonceManager });
   const walletClient = createWalletClient({
     account,
     chain: appChain,
