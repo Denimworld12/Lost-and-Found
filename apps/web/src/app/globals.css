@@ -1,26 +1,167 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens from docs/UI_SPEC.md → "Design tokens".
+ * Tailwind's default palette, radii, fonts, type scale and shadows are reset first,
+ * so only the values below exist as utilities.
+ */
+@theme {
+  --color-*: initial;
+  --color-signal-orange: #ff6314;
+  --color-signal-orange-hover: #ff7a38;
+  --color-node-green: #33ffac;
+  --color-node-violet: #5b76ff;
+  --color-node-magenta: #ff2ad4;
+  --color-node-cyan: #16c4ff;
+  --color-abyss: #04070a;
+  --color-void: #000000;
+  --color-carbon: #090c0f;
+  --color-obsidian: #0f1214;
+  --color-charcoal: #1a1d1f;
+  --color-steel: #676f7a;
+  --color-cloud: #c6ced7;
+  --color-mist: #e1e6eb;
+  --color-snow: #f0f5fa;
+  --color-white: #ffffff;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-*: initial;
+  --font-clash:
+    var(--font-clashgrotesk), "Space Grotesk", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --tracking-clash: 0.033em;
+
+  --text-*: initial;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.33;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.25;
+  --text-body: 16px;
+  --text-body--line-height: 1.5;
+  --text-body-lg: 19px;
+  --text-body-lg--line-height: 1.5;
+  --text-subheading: 21px;
+  --text-subheading--line-height: 1.25;
+  --text-heading-sm: 28px;
+  --text-heading-sm--line-height: 1.25;
+  --text-heading: 37px;
+  --text-heading--line-height: 1.25;
+  --text-heading-lg: 56px;
+  --text-heading-lg--line-height: 1.15;
+  --text-display: 74px;
+  --text-display--line-height: 1;
+  --text-display-mobile: 44px;
+  --text-display-mobile--line-height: 1;
+
+  /* Utility numbers are pixels: p-24 is 24px. The spec's spacing tokens are listed for reference. */
+  --spacing: 1px;
+  --spacing-4: 4px;
+  --spacing-5: 5px;
+  --spacing-7: 7px;
+  --spacing-9: 9px;
+  --spacing-12: 12px;
+  --spacing-14: 14px;
+  --spacing-16: 16px;
+  --spacing-19: 19px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-42: 42px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+
+  --radius-*: initial;
+  --radius-pill: 24px;
+  --radius-card: 8px;
+  --radius-badge: 100px;
+  --radius-chip: 4px;
+
+  --shadow-*: initial;
+  --shadow-subtle: inset 0 0 0 1px #ffffff;
+  --shadow-subtle-2: inset 0 0 0 1px #e1e6eb;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+
+  --breakpoint-*: initial;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  --container-page: 1280px;
+
+  --animate-node-pulse: node-pulse 2s ease-in-out infinite;
+
+  @keyframes node-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-abyss);
+    color: var(--color-snow);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-clash);
+    font-weight: 500;
+    letter-spacing: var(--tracking-clash);
+    color: var(--color-white);
+  }
+
+  /* Focus ring: 2px Signal Orange outline, 2px offset, on every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-signal-orange);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-signal-orange);
+    color: var(--color-abyss);
+  }
+}
+
+@utility page-x {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--container-page);
+  padding-inline: 16px;
+
+  @media (width >= 640px) {
+    padding-inline: 24px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A dismissed announcement bar stays hidden from the first paint (see announcement-bar.tsx). */
+html[data-announcement-dismissed] .announcement-bar {
+  display: none;
 }
