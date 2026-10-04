@@ -1,13 +1,9 @@
-import type { Item, ItemStatus } from "@clf/shared";
+import type { Item } from "@clf/shared";
 import { isAddressEqual, type Address } from "viem";
 import { ApiError } from "./api";
+import { CONTACT_STATUSES } from "./contact-statuses";
 
-/** Statuses in which the owner and finder may see each other's college email. */
-export const CONTACT_STATUSES: readonly ItemStatus[] = [
-  "Claimed",
-  "Disputed",
-  "Completed",
-];
+export { CONTACT_STATUSES };
 
 /**
  * The address whose contact `viewer` may see on `item`: the finder for the owner, the owner
