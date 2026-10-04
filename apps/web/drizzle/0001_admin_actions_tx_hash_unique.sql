@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "admin_actions_tx_hash_idx" ON "admin_actions" USING btree ("tx_hash");

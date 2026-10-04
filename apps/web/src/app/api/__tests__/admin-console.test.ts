@@ -114,6 +114,22 @@ describe("POST /api/admin/actions", () => {
     expect(verifyAdminTx).not.toHaveBeenCalled();
   });
 
+  it("returns the entry another request saved while the receipt was checked", async () => {
+    signIn(arbiter);
+    verifyAdminTx.mockResolvedValue({
+      action: "resolve_dispute_finder",
+      target: "14",
+    });
+    const winner = { id: 9, txHash: HASH };
+    db = fakeDb([[], [], [winner]]);
+    const response = await actions.POST(
+      jsonRequest("/api/admin/actions", resolveBody),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ action: winner });
+    expect(db.calls.some((c) => c.method === "onConflictDoNothing")).toBe(true);
+  });
+
   it("lets only admins record settings and pause changes", async () => {
     signIn(arbiter);
     const response = await actions.POST(

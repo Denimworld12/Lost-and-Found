@@ -2,7 +2,7 @@
 
 import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
-import { useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isAddressEqual } from "viem";
 import { AddressChip } from "@/components/item/address-chip";
 import { describeItemEvent } from "@/components/item/item-history";
@@ -19,7 +19,7 @@ import { useAdminDisputes, useAdminWrite } from "@/hooks/useAdmin";
 import { useItemHistory } from "@/hooks/useItem";
 import { useMetadata } from "@/hooks/useMetadata";
 import { disputeNoteSchema, NOTE_MAX, type AdminCall } from "@/lib/admin";
-import type { AdminDispute } from "@/lib/admin-api";
+import { withHeldDisputes, type AdminDispute } from "@/lib/admin-api";
 import { txUrl } from "@/lib/chain";
 import { ROLES } from "@/lib/contract";
 import { formatDay, formatEth } from "@/lib/format";
@@ -35,17 +35,23 @@ import {
 /** Disputes tab (docs/UI_SPEC.md → Admin): every Disputed item, oldest first. Admins and arbiters. */
 export function Disputes() {
   const disputes = useAdminDisputes();
+  const [held, setHeld] = useState<AdminDispute[]>([]);
+  const hold = useCallback((dispute: AdminDispute, holding: boolean) => {
+    setHeld((current) => {
+      const others = current.filter((d) => d.item.id !== dispute.item.id);
+      if (holding) return [...others, dispute];
+      return others.length === current.length ? current : others;
+    });
+  }, []);
+  const shown = disputes.data ? withHeldDisputes(disputes.data, held) : [];
 
   return (
     <section aria-labelledby="disputes-title" className="flex flex-col gap-24">
       <div className="flex flex-col gap-9">
         <h2 id="disputes-title" className="text-heading-sm">
           Disputes
-          {disputes.data && disputes.data.length > 0 && (
-            <span className="text-cloud tabular">
-              {" "}
-              ({disputes.data.length})
-            </span>
+          {shown.length > 0 && (
+            <span className="text-cloud tabular"> ({shown.length})</span>
           )}
         </h2>
         <p className="text-body text-cloud">
@@ -66,12 +72,16 @@ export function Disputes() {
         >
           {disputes.error.message}
         </EmptyState>
-      ) : disputes.data.length === 0 ? (
+      ) : shown.length === 0 ? (
         <EmptyState title="No open disputes." />
       ) : (
         <ul className="flex flex-col gap-24">
-          {disputes.data.map((dispute) => (
-            <DisputeCard key={dispute.item.id.toString()} dispute={dispute} />
+          {shown.map((dispute) => (
+            <DisputeCard
+              key={dispute.item.id.toString()}
+              dispute={dispute}
+              onHold={hold}
+            />
           ))}
         </ul>
       )}
@@ -95,7 +105,13 @@ function DisputeSkeleton() {
 type Choice = { finderWins: boolean; mode: "direct" | "safe" };
 
 /** One disputed item: parties, details, history, note and the two decisions. */
-function DisputeCard({ dispute }: { dispute: AdminDispute }) {
+function DisputeCard({
+  dispute,
+  onHold,
+}: {
+  dispute: AdminDispute;
+  onHold: (dispute: AdminDispute, holding: boolean) => void;
+}) {
   const { item, ownerEmail, finderEmail } = dispute;
   const metadata = useMetadata(item.metadataCID);
   const history = useItemHistory(item.id, item.status);
@@ -107,6 +123,9 @@ function DisputeCard({ dispute }: { dispute: AdminDispute }) {
   const [choice, setChoice] = useState<Choice | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [proposal, setProposal] = useState<AdminCall | null>(null);
+
+  const holding = write.save !== null && write.save.state !== "saved";
+  useEffect(() => onHold(dispute, holding), [holding, dispute, onHold]);
 
   const title = itemTitle(item, metadata.data);
   const events = history.data?.events ?? [];

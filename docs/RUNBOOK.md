@@ -252,7 +252,9 @@ Contract writes (dispute decisions, settings, pause) are sent from the staff mem
 Once the transaction is mined, the browser posts it to `POST /api/admin/actions`. The server saves the audit
 entry only if the receipt is a successful call to the contract, sent from the caller's linked wallet, with
 the matching event (`DisputeResolved`, `ConfigUpdated`, `Paused`, `Unpaused`). If that save fails, the
-console keeps the note on screen with "Save again". Remove and Retry on the Students tab are sent by the
+console keeps the dispute and its note on screen with "Save again" until the entry is saved. Each
+transaction is recorded once (unique index on `admin_actions.tx_hash`); apply that migration with
+`pnpm --filter web db:migrate` before deploying this version. Remove and Retry on the Students tab are sent by the
 server's verifier wallet (the contract gives `revokeStudent` to `VERIFIER_ROLE`), and the API writes their
 audit entries.
 

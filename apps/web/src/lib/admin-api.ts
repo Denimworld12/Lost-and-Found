@@ -56,6 +56,20 @@ export async function fetchDisputes(): Promise<AdminDispute[]> {
   return disputesSchema.parse(await apiFetch("/api/admin/disputes")).disputes;
 }
 
+/**
+ * The open disputes plus any the console still holds: resolved on-chain but with the
+ * decision's audit entry not yet saved, so the card and its retry stay on screen.
+ */
+export function withHeldDisputes(
+  open: AdminDispute[],
+  held: AdminDispute[],
+): AdminDispute[] {
+  const missing = held.filter(
+    (dispute) => !open.some((other) => other.item.id === dispute.item.id),
+  );
+  return [...missing, ...open];
+}
+
 const STUDENT_STATUSES = ["pending", "verified", "failed", "revoked"] as const;
 export type AdminStudentStatus = (typeof STUDENT_STATUSES)[number];
 

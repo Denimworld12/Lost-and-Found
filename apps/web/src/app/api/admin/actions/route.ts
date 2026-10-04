@@ -74,11 +74,13 @@ export const POST = handler(async (request: Request) => {
   const wallet = requireLinkedWallet(user);
 
   const db = getDb();
-  const [existing] = await db
-    .select()
-    .from(adminActions)
-    .where(eq(adminActions.txHash, input.txHash))
-    .limit(1);
+  const recorded = () =>
+    db
+      .select()
+      .from(adminActions)
+      .where(eq(adminActions.txHash, input.txHash))
+      .limit(1);
+  const [existing] = await recorded();
   if (existing) return json({ action: existing });
 
   const { action, target } = await verifyAdminTx(input, wallet);
@@ -91,6 +93,10 @@ export const POST = handler(async (request: Request) => {
       txHash: input.txHash,
       note: input.note || null,
     })
+    .onConflictDoNothing({ target: adminActions.txHash })
     .returning();
-  return json({ action: row }, { status: 201 });
+  if (row) return json({ action: row }, { status: 201 });
+  // Another request recorded this transaction while we checked the receipt.
+  const [winner] = await recorded();
+  return json({ action: winner });
 });
