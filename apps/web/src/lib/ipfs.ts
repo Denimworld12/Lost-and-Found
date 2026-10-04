@@ -40,6 +40,26 @@ export const itemMetadataSchema = z.object({
 
 export type ItemMetadata = z.infer<typeof itemMetadataSchema>;
 
+/** Latest `lostOn` accepted: tomorrow in UTC, so a student ahead of UTC can pick their today. */
+function latestLostOn(now = new Date()): string {
+  return new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+/**
+ * What the student types in the post form (metadata minus the photo CID). Shared by the form
+ * and `POST /api/upload`.
+ */
+export const itemDetailsSchema = itemMetadataSchema
+  .omit({ image: true })
+  .refine((details) => details.lostOn <= latestLostOn(), {
+    path: ["lostOn"],
+    message: "The date can't be in the future.",
+  });
+
+export type ItemDetails = z.infer<typeof itemDetailsSchema>;
+
 export class MetadataUnavailableError extends Error {
   constructor(cid: string, reason: string) {
     super(`Metadata ${cid} unavailable: ${reason}`);
