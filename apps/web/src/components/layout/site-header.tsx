@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AccountControls } from "./account-controls";
 import { Logo } from "./logo";
 import { MobileMenu } from "./mobile-menu";
 import { isActivePath, NAV_LINKS } from "./nav";
@@ -40,6 +41,7 @@ export function SiteHeader() {
           </ul>
         </nav>
         <div className="ml-auto flex items-center gap-12">
+          <AccountControls />
           <Button asChild className="hidden md:inline-flex">
             <Link href="/post">Report lost item</Link>
           </Button>
