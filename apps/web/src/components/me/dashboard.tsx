@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";

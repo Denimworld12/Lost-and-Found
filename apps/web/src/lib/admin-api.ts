@@ -1,4 +1,4 @@
-import { ITEM_STATUSES, type Item } from "@clf/shared";
+import { ITEM_STATUSES, type Item } from "@milgaya/shared";
 import { getAddress, isAddress, type Address, type Hash } from "viem";
 import { z } from "zod";
 import type { LogActionInput } from "./admin";

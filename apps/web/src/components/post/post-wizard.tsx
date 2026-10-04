@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORIES, type Item } from "@clf/shared";
+import { CATEGORIES, type Item } from "@milgaya/shared";
 import { CameraIcon, ImageIcon, TriangleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";

@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "How it works",
-  description:
-    "How rewards are locked, claimed and paid out on Campus Lost & Found.",
+  description: "How rewards are locked, claimed and paid out on MilGaya.",
 };
 
 const FAQ = [

@@ -68,7 +68,7 @@ Never paste private keys into chat with Claude Code. Enter them only through `np
 - [x] `.nvmrc` = `22`, `.editorconfig`, Prettier config (+ `prettier-plugin-solidity`, `prettier-plugin-tailwindcss`)
 - [x] Contracts project: `mkdir contracts && cd contracts && npx hardhat --init` → choose the TypeScript + viem + node:test template. Make sure `"type": "module"`
 - [x] Web app: `pnpm create next-app@latest apps/web --ts --tailwind --eslint --app --src-dir --import-alias "@/*"`
-- [x] `packages/shared` with `package.json` (`name: @clf/shared`), `src/index.ts`, `tsconfig.json`
+- [x] `packages/shared` with `package.json` (`name: @milgaya/shared`), `src/index.ts`, `tsconfig.json`
 - [x] `subgraph/` placeholder (filled in Phase 5)
 - [x] `docs/` with `DECISIONS.md`, `RUNBOOK.md`, `UI_SPEC.md`
 - [x] `.env.example` with every variable from the "Environment variables" table at the end of this file
@@ -328,7 +328,7 @@ type Stats @entity(immutable: false) {
 
 ```bash
 cd apps/web
-pnpm add wagmi viem @tanstack/react-query zod @clf/shared@workspace:* graphql-request lucide-react clsx tailwind-merge sonner date-fns
+pnpm add wagmi viem @tanstack/react-query zod @milgaya/shared@workspace:* graphql-request lucide-react clsx tailwind-merge sonner date-fns
 pnpm dlx shadcn@latest init            # then add: button dialog sheet tabs badge input textarea select tooltip dropdown-menu skeleton alert-dialog
 ```
 
@@ -339,7 +339,7 @@ pnpm dlx shadcn@latest init            # then add: button dialog sheet tabs badg
 - [x] `src/lib/chain.ts`: Sepolia (and Hardhat local when `NEXT_PUBLIC_CHAIN_ID=31337`), explorer URL builders `txUrl(hash)`, `addressUrl(addr)`
 - [x] `src/lib/wagmi.ts`: `createConfig` with the selected chain, `injected()` connector, HTTP transport from `NEXT_PUBLIC_SEPOLIA_RPC_URL`, `ssr: true`, cookie storage
 - [x] `src/components/providers.tsx` (`'use client'`): `WagmiProvider` + `QueryClientProvider` + `Toaster`
-- [x] `src/lib/contract.ts`: `{ address, abi }` from `@clf/shared`, typed read helpers
+- [x] `src/lib/contract.ts`: `{ address, abi }` from `@milgaya/shared`, typed read helpers
 - [x] `src/lib/graph.ts`: typed queries `getItems(filters, cursor)`, `getItem(id)`, `getItemsByUser(addr)`, `getStats()`
 - [x] Fallback (today the only path; Phase 5 not built yet, see `docs/DECISIONS.md`): if the subgraph errors or is more than 50 blocks behind (`_meta { block { number } }`), read `itemCount` + `getItem` via viem `multicall` (latest 50 items)
 - [x] `src/lib/ipfs.ts`: `ipfsUrl(cid)` using the Pinata gateway; `fetchMetadata(cid)` with zod schema + React Query cache (`staleTime: Infinity`, CIDs never change)

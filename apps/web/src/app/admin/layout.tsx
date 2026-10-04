@@ -4,7 +4,7 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { requireAdminPage } from "@/lib/admin-page";
 
 export const metadata: Metadata = {
-  title: { default: "Admin", template: "%s · Admin — Campus Lost & Found" },
+  title: { default: "Admin", template: "%s · Admin — MilGaya" },
   robots: { index: false },
 };
 

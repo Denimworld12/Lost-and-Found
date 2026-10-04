@@ -1,4 +1,4 @@
-import type { Category, ItemStatus } from "@clf/shared";
+import type { Category, ItemStatus } from "@milgaya/shared";
 import type { ItemEvent } from "@/lib/graph";
 
 export type NodeTone =

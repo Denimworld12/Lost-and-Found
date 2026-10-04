@@ -1,6 +1,6 @@
 "use client";
 
-import type { ItemStatus } from "@clf/shared";
+import type { ItemStatus } from "@milgaya/shared";
 import { useItemHistory } from "@/hooks/useItem";
 import { cn } from "@/lib/utils";
 import { NodeDot } from "./node-dot";

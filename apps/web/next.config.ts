@@ -91,7 +91,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   // The shared package ships TypeScript source.
-  transpilePackages: ["@clf/shared"],
+  transpilePackages: ["@milgaya/shared"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: pinataGateway, pathname: "/ipfs/**" },

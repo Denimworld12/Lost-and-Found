@@ -22,7 +22,7 @@ export default async function NotEligiblePage() {
     <div className="page-x flex flex-col gap-24 py-48">
       <h1 className="text-heading-sm md:text-heading">Not eligible</h1>
       <EmptyState
-        title={`Only ${accounts} can use Campus Lost & Found.`}
+        title={`Only ${accounts} can use MilGaya.`}
         action={
           user ? (
             <SignOutButton redirectUrl="/sign-in">

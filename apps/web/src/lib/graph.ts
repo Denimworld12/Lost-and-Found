@@ -1,4 +1,4 @@
-import type { Item, ItemStatus } from "@clf/shared";
+import type { Item, ItemStatus } from "@milgaya/shared";
 import { isAddressEqual, type Address } from "viem";
 import {
   getPublicClient,

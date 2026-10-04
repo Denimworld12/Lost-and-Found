@@ -15,7 +15,7 @@
   "dependencies": {
     "@clerk/nextjs": "^7.9.10",
     "@clerk/ui": "^1.38.1",
-    "@clf/shared": "workspace:*",
+    "@milgaya/shared": "workspace:*",
     "@neondatabase/serverless": "^1.2.0",
     "@tanstack/react-query": "^5.104.1",
     "class-variance-authority": "^0.7.1",

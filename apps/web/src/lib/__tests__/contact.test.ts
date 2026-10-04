@@ -1,4 +1,4 @@
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { describe, expect, it } from "vitest";
 import { contactCounterparty } from "../contact";
 

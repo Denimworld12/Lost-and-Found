@@ -1,4 +1,4 @@
-import { CATEGORIES } from "@clf/shared";
+import { CATEGORIES } from "@milgaya/shared";
 import { z } from "zod";
 
 // Our CSP forbids eval; without this zod probes `new Function` and the browser logs a CSP violation.

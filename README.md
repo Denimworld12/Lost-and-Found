@@ -1,4 +1,4 @@
-# Campus Lost & Found
+# MilGaya
 
 A campus lost-and-found where a smart contract holds each reward in escrow. A student who lost something
 posts it and locks a reward in test ETH; a finder claims it by locking a small deposit; once the owner

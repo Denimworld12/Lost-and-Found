@@ -1,6 +1,6 @@
 # Runbook
 
-Operational notes for Campus Lost & Found. Filled in as each phase lands (deploy, rotate keys, pause,
+Operational notes for MilGaya. Filled in as each phase lands (deploy, rotate keys, pause,
 redeploy, faucet refills, incident response).
 
 ## Contract deployments

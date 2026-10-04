@@ -176,7 +176,7 @@ Use "deposit" for the finder's stake in UI copy, and "test ETH" when explaining 
 ┌────────────────────────────────────────────────────────────────────────┐
 │ RUNS ON THE SEPOLIA TEST NETWORK. REWARDS USE TEST ETH…           [×]  │  AnnouncementBar (Node Green)
 ├────────────────────────────────────────────────────────────────────────┤
-│ [logo] CAMPUS LOST & FOUND   BROWSE  HOW IT WORKS  TRANSPARENCY        │  Nav: Obsidian, 60 px, sticky
+│ [logo] MILGAYA   BROWSE  HOW IT WORKS  TRANSPARENCY        │  Nav: Obsidian, 60 px, sticky
 │                         ( ● 0x12…AB  0.08 ETH )  [REPORT LOST ITEM] (av)│  Ghost wallet pill + orange CTA + Clerk avatar
 ├────────────────────────────────────────────────────────────────────────┤
 │ NetworkGuard (only when needed)                                         │
@@ -371,7 +371,7 @@ Done state: "You're all set." [Report lost item] [Browse items]
 
 ### Not eligible `/not-eligible`
 
-"Only @{domain} accounts can use Campus Lost & Found. You signed in as {email}." [Sign out and try another account]
+"Only @{domain} accounts can use MilGaya. You signed in as {email}." [Sign out and try another account]
 
 ### My dashboard `/me`
 
@@ -510,4 +510,4 @@ The sign-in page sits on Abyss with a small lattice fragment behind the left pan
 - `prefers-reduced-motion`: no hero dot pulse, no skeleton pulse.
 - Images have meaningful alt text; the hero lattice is `aria-hidden` except its dots, which are links with item titles as labels.
 - Uppercase is applied with CSS only, so assistive tech reads normal case.
-- Page titles: "{Item title} — Campus Lost & Found", etc. Open Graph image per item using its photo.
+- Page titles: "{Item title} — MilGaya", etc. Open Graph image per item using its photo.

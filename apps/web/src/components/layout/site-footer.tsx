@@ -25,7 +25,7 @@ export function SiteFooter() {
             <div className="flex items-center gap-9">
               <LogoMark className="size-24" />
               <span className="font-clash text-body-sm font-semibold tracking-clash text-white uppercase">
-                Campus Lost &amp; Found
+                MilGaya
               </span>
             </div>
             <div className="flex flex-col gap-4">

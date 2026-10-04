@@ -27,7 +27,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
     <Link
       href="/"
       className="inline-flex min-h-44 items-center gap-9 rounded-chip"
-      aria-label="Campus Lost & Found home"
+      aria-label="MilGaya home"
     >
       <LogoMark />
       <span
@@ -36,7 +36,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
           compact && "max-[379px]:sr-only",
         )}
       >
-        Campus Lost &amp; Found
+        MilGaya
       </span>
     </Link>
   );

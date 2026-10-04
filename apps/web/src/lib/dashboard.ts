@@ -1,4 +1,4 @@
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { withinWindow } from "./item-actions";
 
 /** What a "Needs your action" row asks for (docs/UI_SPEC.md → My dashboard). */

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import Link from "next/link";
 import type { ItemMetadata } from "@/lib/ipfs";
 import { cn } from "@/lib/utils";

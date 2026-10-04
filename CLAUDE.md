@@ -1,4 +1,4 @@
-# CLAUDE.md — Campus Lost & Found dApp
+# CLAUDE.md — MilGaya dApp
 
 This file is loaded by Claude Code at the start of every session. Read it fully before doing anything.
 The build plan is in `PLAN.md`. The page designs and flows are in `docs/UI_SPEC.md`.

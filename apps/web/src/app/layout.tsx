@@ -23,12 +23,12 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 export const metadata: Metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   title: {
-    default: "Campus Lost & Found",
-    template: "%s — Campus Lost & Found",
+    default: "MilGaya",
+    template: "%s — MilGaya",
   },
   description:
     "Post a lost item with a reward locked in escrow on Ethereum Sepolia. The finder is paid when you confirm it's back.",
-  applicationName: "Campus Lost & Found",
+  applicationName: "MilGaya",
 };
 
 export const viewport: Viewport = {
