@@ -22,8 +22,10 @@ const {
   getItems,
   getItemsByUser,
   getStats,
+  getUserHistory,
   toItemEvent,
 } = await import("../graph");
+const { scanEvents } = await import("../contract");
 
 const OWNER = "0x00000000000000000000000000000000000000aa" as const;
 const FINDER = "0x00000000000000000000000000000000000000bb" as const;
@@ -167,5 +169,64 @@ describe("toItemEvent", () => {
         args: { to: FINDER, amount: 1n },
       }),
     ).toBeNull();
+  });
+});
+
+describe("getUserHistory", () => {
+  const event = (
+    name: string,
+    args: Record<string, unknown>,
+    itemId: bigint | null,
+  ) => ({
+    name,
+    args,
+    itemId,
+    txHash: "0xabc" as const,
+    blockNumber: 1n,
+    logIndex: 0,
+    timestamp: 5n,
+  });
+
+  it("keeps events the student sent or received and events on their items", async () => {
+    const scan = vi.mocked(scanEvents);
+    scan.mockResolvedValueOnce({ events: [], complete: true });
+    await getUserHistory(FINDER, [4n]);
+    const { filter } = scan.mock.calls.at(-1)![0];
+    const keep = (e: ReturnType<typeof event>) =>
+      filter!(e as Parameters<NonNullable<typeof filter>>[0]);
+
+    expect(keep(event("ItemClaimed", { id: 1n, finder: FINDER }, 1n))).toBe(
+      true,
+    );
+    expect(
+      keep(
+        event(
+          "Withdrawn",
+          { to: FINDER.toUpperCase().replace("0X", "0x"), amount: 1n },
+          null,
+        ),
+      ),
+    ).toBe(true);
+    // Owner confirmed the student's claim on item 4: no student address in the args.
+    expect(keep(event("ItemCancelled", { id: 4n }, 4n))).toBe(true);
+    expect(keep(event("ItemPosted", { id: 2n, owner: OWNER }, 2n))).toBe(false);
+    expect(keep(event("StudentVerified", { student: FINDER }, null))).toBe(
+      false,
+    );
+  });
+
+  it("turns withdrawals and item events into dashboard rows", async () => {
+    vi.mocked(scanEvents).mockResolvedValueOnce({
+      events: [
+        event("Withdrawn", { to: FINDER, amount: 15n }, null),
+        event("ReturnConfirmed", { id: 4n, finder: FINDER, amount: 15n }, 4n),
+      ] as never,
+      complete: true,
+    });
+    const { events } = await getUserHistory(FINDER, [4n]);
+    expect(events).toMatchObject([
+      { kind: "Withdrawn", itemId: null, amount: 15n },
+      { kind: "Confirmed", itemId: 4n, actor: FINDER, amount: 15n },
+    ]);
   });
 });

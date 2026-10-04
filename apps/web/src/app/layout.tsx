@@ -12,6 +12,7 @@ import { SetupBanner } from "@/components/layout/setup-banner";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SkipLink } from "@/components/layout/skip-link";
 import { Providers } from "@/components/providers";
+import { NetworkGuard } from "@/components/tx/network-guard";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import { getWagmiConfig } from "@/lib/wagmi";
 import { clashGrotesk, dmMono, inter } from "./fonts";
@@ -64,6 +65,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <AnnouncementBar />
             <SiteHeader />
             <SetupBanner />
+            <NetworkGuard />
             <main
               id="main"
               tabIndex={-1}
