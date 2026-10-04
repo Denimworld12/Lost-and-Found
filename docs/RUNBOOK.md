@@ -322,3 +322,142 @@ it doesn't hold the arbiter role and which wallet does; the confirm button stays
 typed exactly; a window of 4 minutes is refused with the 5 minutes to 14 days bound; all seven actions
 appear in the audit log with their notes; Overview warned that the verifier wallet (0.0018 ETH) is below
 0.02 ETH; no console errors; no horizontal scroll at 360 px.
+
+## Production (Phase 11)
+
+Live at **<https://campus-lost-found-rosy-two.vercel.app>** since 4 Oct 2026, on Clerk's **development**
+instance and the free `*.vercel.app` URL (PLAN.md Phase 11 Option A). Clerk shows its small development
+banner and its development-instance limits apply. The contract is `sepolia-v1` from the table at the top;
+Phase 11 did not redeploy it (`pnpm hardhat ignition status sepolia-v1` in `contracts/`).
+
+### Vercel project
+
+| Setting         | Value                                                        |
+| --------------- | ------------------------------------------------------------ |
+| Project         | `campus-lost-found` (team `nikhil-guptas-projects-1a80690d`) |
+| Production URL  | `https://campus-lost-found-rosy-two.vercel.app`              |
+| Root directory  | `apps/web`, "Include files outside root directory" on        |
+| Install command | `pnpm install --frozen-lockfile`                             |
+| Build command   | `pnpm --filter web build`                                    |
+| Node.js         | 22.x                                                         |
+| Git integration | Not connected: deploys come from the CLI only                |
+
+The CLI is linked at the **repository root** (`.vercel/` there, git-ignored), not inside `apps/web` as
+PLAN.md shows: with the root directory set to `apps/web`, Vercel resolves it from the linked folder, so
+linking inside `apps/web` would look for `apps/web/apps/web`. Deploy from the repo root:
+
+```bash
+vercel deploy --prod    # production
+vercel deploy           # preview (staging contract)
+vercel rollback         # put the previous production deployment back
+```
+
+The CLI prints `Error while parsing config file: …/pnpm-lock.yaml` on every deploy; it is harmless (the
+build installs with pnpm from `packageManager` and finishes `READY`).
+
+### Environment variables
+
+Set with `vercel env add <NAME> production` / `preview`, values piped from `apps/web/.env.local` (secrets as
+`--sensitive`, so the dashboard can't show them again). An env change only takes effect on the next deploy.
+
+| Variable                                                                         | Production                                                           | Preview                                        |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------- |
+| `NEXT_PUBLIC_CHAIN_ID`                                                           | `11155111`                                                           | same                                           |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS` / `_DEPLOY_BLOCK`                                 | `sepolia-v1`, `0x15C6…c1dD` / 11836334                               | `sepolia-staging-v1`, `0x3754…a1F6` / 11836342 |
+| `SEPOLIA_RPC_URL` (server)                                                       | Alchemy key from `.env.local`                                        | same                                           |
+| `NEXT_PUBLIC_SEPOLIA_RPC_URL`                                                    | unset: browser uses `ethereum-sepolia-rpc.publicnode.com`            | unset                                          |
+| `NEXT_PUBLIC_PINATA_GATEWAY`, `_GATEWAY_KEY`, `PINATA_JWT`                       | from `.env.local`                                                    | same                                           |
+| `VERIFIER_PRIVATE_KEY`, `DATABASE_URL`                                           | from `.env.local` (same Neon database as development)                | same                                           |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`                          | Clerk development instance                                           | same                                           |
+| `CLERK_WEBHOOK_SIGNING_SECRET`                                                   | production endpoint's secret (below)                                 | unset                                          |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `_SIGN_UP_URL` / `_SIGN_UP_FORCE_REDIRECT_URL` | `/sign-in` / `/sign-up` / `/onboarding`                              | same                                           |
+| `ALLOWED_EMAIL_DOMAIN`                                                           | from `.env.local`                                                    | same                                           |
+| `NEXT_PUBLIC_SITE_URL`                                                           | `https://campus-lost-found-rosy-two.vercel.app`                      | unset (preview URLs change per deploy)         |
+| `SENTRY_DSN`                                                                     | from `.env.local`                                                    | same                                           |
+| `NEXT_PUBLIC_SUBGRAPH_URL`                                                       | `https://api.studio.thegraph.com/query/1762923/lost-and-found/0.0.1` | unset (the subgraph indexes `sepolia-v1` only) |
+| `NEXT_PUBLIC_SENTRY_DSN`                                                         | unset (no Sentry SDK in the app yet)                                 | unset                                          |
+
+- **Strip quotes before piping a value.** `.env.local` may wrap a value in quotes (`DATABASE_URL='postgres…'`).
+  Node's env loader drops them, but `vercel env add` stores them as part of the value. The first production
+  deploy failed every database query this way (`POST /api/upload` 500, "Failed query: select … from students")
+  until `DATABASE_URL` was re-added without the quotes and production redeployed.
+- **Alchemy free tier allows 10 blocks per `eth_getLogs`.** The app scans events in 10,000-block chunks, but only
+  in the browser, which uses the public RPC above; server code reads items and totals with `eth_call`, which
+  Alchemy serves. Don't point `NEXT_PUBLIC_SEPOLIA_RPC_URL` at a free Alchemy key without shrinking `LOG_CHUNK`
+  in `apps/web/src/lib/contract.ts`.
+- **Preview shares production's database and Clerk instance.** A student who activates on a preview deploy is
+  verified on the staging contract only, but their `students` row and `publicMetadata.onchainVerified` are the
+  same ones production reads. Don't onboard real students on previews.
+- PLAN.md's `vercel env pull .env.local` was not run: sensitive values can't be pulled back, so it would blank
+  the populated local file.
+
+### Clerk webhook
+
+Endpoint `https://campus-lost-found-rosy-two.vercel.app/api/webhooks/clerk` for `user.created`,
+`user.updated`, `user.deleted` (Clerk dashboard → Configure → Webhooks; Svix endpoint
+`ep_3KE8dRULajP45EpTV4F83a4sOdj`). It was registered through the Backend API instead of the dashboard:
+`POST https://api.clerk.com/v1/webhooks/svix_url` with `CLERK_SECRET_KEY` returns a one-time Svix portal link.
+Its signing secret is in `CLERK_WEBHOOK_SIGNING_SECRET` (production). A test `user.deleted` event was answered
+`200 {"ok":true}`, so the signature check passes. Local development has no webhook (no public URL).
+
+### Post-deploy wiring
+
+- Database: `pnpm --filter web db:migrate` applied `0001_admin_actions_tx_hash_unique` to the Neon database
+  on 4 Oct 2026 (the same database as development; it also holds another app's tables, which Drizzle doesn't
+  touch).
+- Pinata: the dedicated gateway restricts reads by Gateway Key, not by domain, so nothing was allowlisted.
+  Item photos load on production through `/_next/image`.
+- Alchemy: no browser key (see `NEXT_PUBLIC_SEPOLIA_RPC_URL`), so no domain allowlist is needed.
+- Subgraph: the captain published `lost-and-found` v0.0.1 to Subgraph Studio on 4 Oct 2026 (indexes
+  `sepolia-v1`; `items`, `itemEvents`, `stats`, `config`), and its query URL was added to production and
+  redeployed. The app doesn't query it yet: `NEXT_PUBLIC_SUBGRAPH_URL` only adds its origin to the CSP, and
+  `apps/web/src/lib/graph.ts` still reads the contract directly. Switching `graph.ts` to the subgraph (with the
+  contract as fallback) is the remaining Phase 5 code.
+
+### Accounts and owners
+
+Every account below is the captain's; nobody else holds a login.
+
+| Service         | What it holds                                                                                                                             |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel          | Project `campus-lost-found`, env vars, deployments                                                                                        |
+| Clerk           | Development instance: users, roles, MetaMask links, webhook                                                                               |
+| Neon            | Postgres database in `DATABASE_URL`                                                                                                       |
+| Pinata          | API JWT, dedicated gateway and its Gateway Key                                                                                            |
+| Alchemy         | Server RPC key in `SEPOLIA_RPC_URL`                                                                                                       |
+| Etherscan       | `ETHERSCAN_API_KEY` (Hardhat keystore) for contract verification                                                                          |
+| Sentry          | `SENTRY_DSN`                                                                                                                              |
+| Sepolia wallets | Deployer in the captain's MetaMask; admin, verifier, arbiter and test students in the Hardhat development keystore (accounts table above) |
+
+### Smoke test on production
+
+Steps: logged-out browse loads items and images → a new college account onboards to verified → Student A
+posts an item with a photo → Student B claims it and both see each other's contact → Student A confirms →
+Student B withdraws and the balances on Etherscan match → `/transparency` totals change.
+
+Checked on 4 Oct 2026 against the live URL, by reading the contract, the Neon `uploads` table and the page:
+
+| Step                                     | Result on production                                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logged-out browse loads items and images | Pass: `/`, `/items`, `/items/6`, `/transparency`, `/how-it-works`, `/sign-in` answer 200; photos load from the dedicated gateway through `/_next/image`                                                                                                                       |
+| New college account onboards to verified | Not run: no `students` row created after the deploy                                                                                                                                                                                                                           |
+| Post an item with a photo                | Pass: photo uploaded through `/api/upload` (11:57 UTC) and item #10 posted with 0.005 ETH, [`0xed505293…8e0e44`](https://sepolia.etherscan.io/tx/0xed505293483c4ca156008e5060df7a2752248ed47f19a478b937e048e78d0e44), from `0xC8F5…1829` (the Deployer wallet, not Student A) |
+| Claim, confirm, withdraw                 | Not run: #10 was cancelled a minute later, [`0x437bd6f1…0adfcb`](https://sepolia.etherscan.io/tx/0x437bd6f1458ff6b657b2e18e49e74909891ebe19e2b9ecfc2b6d3e2d450adfcb); no claim, confirm or withdraw on any item since the deploy                                              |
+| `/transparency` totals update            | Pass: 10 items posted, 0.002 ETH held, 0.0085 ETH waiting to be withdrawn (the cancelled 0.005 ETH reward credited back), "Listing cancelled · Item #10" newest; all match the contract at block 11842028                                                                     |
+
+The first production deploy (about 10:39 UTC) failed every database call because of the quoted
+`DATABASE_URL` above; uploads work since the redeploy. The full post → claim → confirm → withdraw sequence
+has passed on `sepolia-v1` through the same code on the dev server (Phase 8 live check above) but not yet
+through the production URL. To finish it, two verified students run it on the live URL, then add the claim,
+confirm and withdraw transactions to this table.
+
+### Incident response
+
+| Situation                                     | Do this                                                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Contract misbehaving or funds at risk         | Admin → `/admin/settings` → Pause (type `PAUSE`). Posting and claiming stop; returns, disputes and withdrawals keep working. Resume there later.             |
+| Bad deploy (errors, broken pages)             | `vercel rollback` from the repo root, then fix and `vercel deploy --prod`. `vercel logs --environment production --status-code 5xx` shows failures.          |
+| A server secret leaked                        | Rotate it at the source (Clerk API keys, Pinata JWT, Neon password, Alchemy key), `vercel env add <NAME> production --force`, then `vercel deploy --prod`.   |
+| Verifier key leaked                           | Pause, have the admin grant `VERIFIER_ROLE` to a new wallet and revoke it from the old one, fund the new wallet, update `VERIFIER_PRIVATE_KEY` and redeploy. |
+| Webhook failing (400s in Clerk's webhook log) | The secret doesn't match: copy the endpoint's signing secret into `CLERK_WEBHOOK_SIGNING_SECRET` and redeploy.                                               |
+| Activations stuck on "pending"/"failed"       | Verifier wallet out of ETH: fund it (≥ 0.01 ETH), then Retry from `/admin` → Students.                                                                       |

@@ -577,9 +577,9 @@ In Vercel project settings: Node 22, install command `pnpm install --frozen-lock
 
 ### 4. Post-deploy wiring
 
-- [ ] Clerk webhook URL → production domain; send a test event
+- [x] Clerk webhook URL → production domain; send a test event
 - [ ] Alchemy browser key: allowlist the production domain
-- [ ] Pinata gateway: allowlist the production domain if the gateway is restricted
+- [x] Pinata gateway: allowlist the production domain if the gateway is restricted
 - [ ] Subgraph: production version published, URL in env vars
 
 ### 5. Smoke test (scripted checklist in `docs/RUNBOOK.md`)
