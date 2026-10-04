@@ -618,6 +618,7 @@ In Vercel project settings: Node 22, install command `pnpm install --frozen-lock
 | `NEXT_PUBLIC_CONTRACT_DEPLOY_BLOCK` | Vercel | For event queries |
 | `NEXT_PUBLIC_SUBGRAPH_URL` | Vercel | Studio query URL |
 | `NEXT_PUBLIC_PINATA_GATEWAY` | Vercel | `your-gateway.mypinata.cloud` |
+| `NEXT_PUBLIC_PINATA_GATEWAY_KEY` | Vercel | Read-only Gateway Key for the dedicated gateway; see `docs/RUNBOOK.md` |
 | `PINATA_JWT` | Vercel (server) | |
 | `VERIFIER_PRIVATE_KEY` | Vercel (server) | Verifier wallet only, never the deployer |
 | `DATABASE_URL` | Vercel (server) | Neon pooled connection string |

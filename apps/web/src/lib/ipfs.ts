@@ -21,9 +21,21 @@ export function isCid(value: string): boolean {
   return CID_PATTERN.test(value);
 }
 
+/**
+ * Read key for a dedicated gateway with access controls (`NEXT_PUBLIC_PINATA_GATEWAY_KEY`).
+ * Without it such a gateway answers 401 ERR_ID:00024. Never sent to the shared public gateway.
+ */
+export function pinataGatewayKey(): string | null {
+  if (pinataGateway() === DEFAULT_PINATA_GATEWAY) return null;
+  return process.env.NEXT_PUBLIC_PINATA_GATEWAY_KEY?.trim() || null;
+}
+
 /** Gateway URL for a CID, or `null` if the value isn't a CID. */
 export function ipfsUrl(cid: string): string | null {
-  return isCid(cid) ? `https://${pinataGateway()}/ipfs/${cid}` : null;
+  if (!isCid(cid)) return null;
+  const url = `https://${pinataGateway()}/ipfs/${cid}`;
+  const key = pinataGatewayKey();
+  return key ? `${url}?pinataGatewayToken=${encodeURIComponent(key)}` : url;
 }
 
 /** Item metadata JSON pinned to IPFS by the upload API. Public and permanent: no personal data. */
