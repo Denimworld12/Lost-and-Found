@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { NodeDot } from "@/components/item/node-dot";
 import { useContractConfig } from "@/hooks/useChainData";
 import type { Role } from "@/lib/session";
@@ -35,6 +35,15 @@ export function AdminShell({
   const pathname = usePathname();
   const config = useContractConfig();
   const tabs = adminTabs(role);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // Phones: the tabs scroll sideways; bring the current one into view.
+  useEffect(() => {
+    const list = listRef.current;
+    const active = list?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (list && active && list.scrollWidth > list.clientWidth)
+      list.scrollLeft = active.offsetLeft - list.offsetLeft - 16;
+  }, [pathname]);
 
   return (
     <div className="flex flex-col gap-24">
@@ -70,7 +79,10 @@ export function AdminShell({
 
       <div className="flex flex-col gap-24 md:grid md:grid-cols-[200px_minmax(0,1fr)] md:gap-48">
         <nav aria-label="Admin">
-          <ul className="flex gap-24 overflow-x-auto border-b border-charcoal md:flex-col md:gap-4 md:border-b-0 md:border-l">
+          <ul
+            ref={listRef}
+            className="flex [scrollbar-width:none] gap-24 overflow-x-auto border-b border-charcoal md:flex-col md:gap-4 md:border-b-0 md:border-l"
+          >
             {tabs.map((tab) => {
               const active = pathname === tab.href;
               return (

@@ -1,8 +1,8 @@
 import {
   encodeAbiParameters,
   encodeEventTopics,
-  getAbiItem,
   getAddress,
+  type AbiEvent,
   type Hash,
   type Log,
   type PublicClient,
@@ -35,9 +35,12 @@ function eventLog(
   eventName: EventName,
   args: Record<string, unknown>,
   address = lostAndFound.address,
-): Log {
-  const event = getAbiItem({ abi: lostAndFound.abi, name: eventName });
-  if (!event || event.type !== "event") throw new Error(eventName);
+): TransactionReceipt["logs"][number] {
+  const abi: readonly { type: string; name?: string }[] = lostAndFound.abi;
+  const event = abi.find(
+    (item) => item.type === "event" && item.name === eventName,
+  ) as AbiEvent | undefined;
+  if (!event) throw new Error(eventName);
   const topics = encodeEventTopics({
     abi: lostAndFound.abi,
     eventName,
@@ -50,7 +53,7 @@ function eventLog(
     plain,
     plain.map((input) => args[input.name!]),
   );
-  return { address, topics, data } as unknown as Log;
+  return { address, topics, data } as unknown as Log<bigint, number, false>;
 }
 
 function receipt(overrides: Partial<TransactionReceipt> = {}) {

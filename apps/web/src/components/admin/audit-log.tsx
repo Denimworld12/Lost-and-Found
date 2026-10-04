@@ -107,7 +107,7 @@ function AuditRowView({ row }: { row: AuditRow }) {
           {format(new Date(row.createdAt), "d MMM yyyy, HH:mm")}
         </time>
       </td>
-      <td className="min-w-0 text-body-sm break-all text-snow md:px-24 md:py-12 md:align-top">
+      <td className="min-w-0 text-body-sm break-words text-snow md:px-24 md:py-12 md:align-top">
         {actorLabel(row)}
       </td>
       <td className="flex min-w-0 flex-col gap-4 md:table-cell md:px-24 md:py-12 md:align-top">
@@ -131,7 +131,7 @@ function AuditRowView({ row }: { row: AuditRow }) {
             href={link}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-32 items-center gap-4 font-mono text-caption text-snow uppercase tabular hover:text-white [&_svg]:size-12"
+            className="inline-flex min-h-32 items-center gap-4 font-mono text-caption whitespace-nowrap text-snow tabular hover:text-white [&_svg]:size-12"
           >
             {shortHash(row.txHash)}
             <span className="sr-only"> on Etherscan (opens in a new tab)</span>
