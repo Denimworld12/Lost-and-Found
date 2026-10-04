@@ -33,8 +33,23 @@ describe("ipfsUrl", () => {
 
   it("uses the configured gateway host, even if given as a URL", () => {
     vi.stubEnv("NEXT_PUBLIC_PINATA_GATEWAY", "https://my-gw.mypinata.cloud/");
+    vi.stubEnv("NEXT_PUBLIC_PINATA_GATEWAY_KEY", "");
     expect(pinataGateway()).toBe("my-gw.mypinata.cloud");
     expect(ipfsUrl(CID_V1)).toBe(`https://my-gw.mypinata.cloud/ipfs/${CID_V1}`);
+  });
+
+  it("adds the gateway key to dedicated gateway URLs", () => {
+    vi.stubEnv("NEXT_PUBLIC_PINATA_GATEWAY", "my-gw.mypinata.cloud");
+    vi.stubEnv("NEXT_PUBLIC_PINATA_GATEWAY_KEY", " k3y ");
+    expect(ipfsUrl(CID_V1)).toBe(
+      `https://my-gw.mypinata.cloud/ipfs/${CID_V1}?pinataGatewayToken=k3y`,
+    );
+  });
+
+  it("never sends the gateway key to the shared gateway", () => {
+    vi.stubEnv("NEXT_PUBLIC_PINATA_GATEWAY", "");
+    vi.stubEnv("NEXT_PUBLIC_PINATA_GATEWAY_KEY", "k3y");
+    expect(ipfsUrl(CID_V1)).toBe(`https://gateway.pinata.cloud/ipfs/${CID_V1}`);
   });
 
   it("refuses anything that isn't a CID", () => {

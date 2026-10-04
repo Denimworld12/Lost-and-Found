@@ -134,6 +134,7 @@ Values for `apps/web/.env.local` (git-ignored; Vercel env vars in production). N
 | `VERIFIER_PRIVATE_KEY`                                  | `pnpm --filter contracts exec hardhat keystore get --dev VERIFIER_PRIVATE_KEY`                           |
 | `DATABASE_URL`                                          | Neon pooled connection string                                                                            |
 | `PINATA_JWT`, `NEXT_PUBLIC_PINATA_GATEWAY`              | Pinata API key (JWT) and dedicated gateway host                                                          |
+| `NEXT_PUBLIC_PINATA_GATEWAY_KEY`                        | Pinata → Gateways → Access Controls → Gateway Keys (read key for the dedicated gateway)                  |
 | `ALLOWED_EMAIL_DOMAIN`                                  | College email domain, e.g. `yourcollege.edu.in` (comma-separate extra domains)                           |
 
 Clerk dashboard settings the code relies on:
@@ -214,10 +215,14 @@ pinned CID (one upload); owner and finder each see the other's college email aft
 open item page updates within seconds of the other's transaction, with a toast; the ActionBar switches from
 the dispute buttons to "Collect reward" on chain time; no console errors; 360 px layout.
 
-### Known issue: dedicated Pinata gateway refuses new uploads
+### Dedicated Pinata gateway needs its Gateway Key
 
-The gateway in `NEXT_PUBLIC_PINATA_GATEWAY` answers 401 `ERR_ID:00024` ("This content cannot be requested
-through the gateway you are using") for CIDs pinned by `PINATA_JWT`, so photos and details of new items show
-"unavailable". The same CIDs load from `gateway.pinata.cloud`. Check in the Pinata dashboard that the
-gateway and the API key belong to the same account and that the gateway's access controls allow these files.
-Until it's fixed, run the app with `NEXT_PUBLIC_PINATA_GATEWAY=gateway.pinata.cloud` (or leave it unset).
+The gateway in `NEXT_PUBLIC_PINATA_GATEWAY` restricts reads: without a key it answers 401 `ERR_ID:00024`
+("This content cannot be requested through the gateway you are using"). Create or copy the key under
+Pinata → Gateways → (gateway) → Access Controls → Gateway Keys and set it as `NEXT_PUBLIC_PINATA_GATEWAY_KEY`
+(`.env.local` and Vercel). The app appends it as `?pinataGatewayToken=` to every dedicated-gateway URL. It is a
+read-only key and safe in the browser. With no dedicated gateway set, the app uses `gateway.pinata.cloud`.
+
+Checked live on 4 Oct 2026: Student A posted #6 with a photo through the UI
+([`0xba2558c3…29ed45`](https://sepolia.etherscan.io/tx/0xba2558c36dafecd7eba46f2ed55363e9a590532254150739a80a4dc66929ed45));
+its metadata and photo both loaded from the dedicated gateway (200).

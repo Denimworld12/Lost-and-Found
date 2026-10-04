@@ -1,7 +1,7 @@
 import "server-only";
 import { PinataSDK } from "pinata";
 import { serverEnv } from "./env";
-import { pinataGateway } from "./ipfs";
+import { pinataGateway, pinataGatewayKey } from "./ipfs";
 
 let pinata: PinataSDK | undefined;
 
@@ -9,6 +9,7 @@ function getPinata(): PinataSDK {
   pinata ??= new PinataSDK({
     pinataJwt: serverEnv.pinataJwt(),
     pinataGateway: pinataGateway(),
+    pinataGatewayKey: pinataGatewayKey() ?? undefined,
   });
   return pinata;
 }
