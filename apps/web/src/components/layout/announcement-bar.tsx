@@ -1,7 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 export const ANNOUNCEMENT_STORAGE_KEY = "clf:announcement-dismissed";
 
@@ -11,10 +11,31 @@ export const ANNOUNCEMENT_STORAGE_KEY = "clf:announcement-dismissed";
  */
 export const announcementScript = `try{if(localStorage.getItem("${ANNOUNCEMENT_STORAGE_KEY}"))document.documentElement.setAttribute("data-announcement-dismissed","")}catch(e){}`;
 
+/** Whether the bar was dismissed earlier. False when storage is unavailable. */
+export function isAnnouncementDismissed(): boolean {
+  try {
+    return localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function subscribeToStorage(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  return () => window.removeEventListener("storage", onChange);
+}
+
 /** Node Green bar: testnet notice, dismissal remembered in localStorage. */
 export function AnnouncementBar() {
   const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
+  // Also read storage after hydration: the head script is missing from some responses
+  // (Next's not-found HTML), and the bar must still stay hidden there.
+  const stored = useSyncExternalStore(
+    subscribeToStorage,
+    isAnnouncementDismissed,
+    () => false,
+  );
+  if (dismissed || stored) return null;
 
   function dismiss() {
     try {
