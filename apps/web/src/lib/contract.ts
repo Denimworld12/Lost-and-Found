@@ -7,6 +7,7 @@ import {
 } from "@clf/shared";
 import {
   createPublicClient,
+  getAbiItem,
   getAddress,
   http,
   isAddress,
@@ -19,7 +20,7 @@ import {
   type Hash,
   type PublicClient,
 } from "viem";
-import { appChain, rpcUrl } from "./chain";
+import { appChain, isLocalChain, rpcUrl } from "./chain";
 
 const deployment = lostAndFoundAddresses[appChain.id];
 
@@ -46,12 +47,15 @@ export const lostAndFound = {
 
 let client: PublicClient | undefined;
 
-/** Read-only viem client for the app chain. JSON-RPC batching and multicall are on. */
+/**
+ * Read-only viem client for the app chain. JSON-RPC batching and multicall are on. The local
+ * Hardhat chain has no Multicall3 contract, so multicall runs deployless there.
+ */
 export function getPublicClient(): PublicClient {
   client ??= createPublicClient({
     chain: appChain,
     transport: http(rpcUrl(), { batch: true, retryCount: 2 }),
-    batch: { multicall: true },
+    batch: { multicall: { deployless: isLocalChain } },
   }) as PublicClient;
   return client;
 }
@@ -124,23 +128,6 @@ export async function readItems(
       items.push(toItem(ids[index], result.result as RawItem));
   });
   return items;
-}
-
-/** Reads one item; `null` when the ID doesn't exist (the contract reverts `ItemNotFound`). */
-export async function readItem(
-  id: bigint,
-  publicClient = getPublicClient(),
-): Promise<Item | null> {
-  if (id < 1n) return null;
-  const count = await readItemCount(publicClient);
-  if (id > count) return null;
-  const raw = await publicClient.readContract({
-    address: lostAndFound.address,
-    abi: lostAndFound.abi,
-    functionName: "getItem",
-    args: [id],
-  });
-  return toItem(id, raw as RawItem);
 }
 
 // ─────────────────────────────────────────────────────────────── Config and totals
@@ -368,29 +355,48 @@ export type RoleName = keyof typeof ROLES;
 
 export type RoleHolders = Record<RoleName, Address[]>;
 
+const roleGrantedEvent = getAbiItem({
+  abi: lostAndFoundAbi,
+  name: "RoleGranted",
+});
+
 /**
  * Current holders of each role. The contract isn't enumerable, so candidates come from
- * `RoleGranted` events and each one is confirmed with `hasRole`.
+ * `RoleGranted` logs (scanned forward from the deploy block, filtered by topic) and each one
+ * is confirmed with `hasRole`.
  */
 export async function readRoleHolders(
   publicClient = getPublicClient(),
 ): Promise<RoleHolders> {
-  const { events, complete } = await scanEvents(
-    {
-      limit: Number.MAX_SAFE_INTEGER,
-      filter: (event) => event.name === "RoleGranted",
-      maxChunks: 120,
-    },
-    publicClient,
-  );
-  if (!complete)
-    throw new Error("Role history is longer than the RPC scan allows");
+  const latest = await publicClient.getBlockNumber();
+  const ranges: [bigint, bigint][] = [];
+  for (
+    let fromBlock = lostAndFound.deployBlock;
+    fromBlock <= latest;
+    fromBlock += LOG_CHUNK
+  ) {
+    const toBlock = fromBlock + LOG_CHUNK - 1n;
+    ranges.push([fromBlock, toBlock < latest ? toBlock : latest]);
+  }
 
   const candidates = new Map<string, { role: Hash; account: Address }>();
-  for (const event of events) {
-    const role = event.args.role as Hash;
-    const account = getAddress(event.args.account as Address);
-    candidates.set(`${role}:${account}`, { role, account });
+  for (let i = 0; i < ranges.length; i += LOG_PARALLEL) {
+    const batches = await Promise.all(
+      ranges.slice(i, i + LOG_PARALLEL).map(([fromBlock, toBlock]) =>
+        publicClient.getLogs({
+          address: lostAndFound.address,
+          event: roleGrantedEvent,
+          fromBlock,
+          toBlock,
+        }),
+      ),
+    );
+    for (const log of batches.flat()) {
+      const { role, account } = log.args;
+      if (!role || !account) continue;
+      const holder = getAddress(account);
+      candidates.set(`${role}:${holder}`, { role, account: holder });
+    }
   }
   const list = [...candidates.values()];
   const checks = await publicClient.multicall({
