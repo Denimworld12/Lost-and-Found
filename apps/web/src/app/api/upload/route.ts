@@ -1,4 +1,4 @@
-import { and, count, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt, sql } from "drizzle-orm";
 import { ApiError, handler, json, parse } from "@/lib/api";
 import { requireVerifiedStudent } from "@/lib/auth";
 import { getDb, uploads } from "@/lib/db";
@@ -33,23 +33,49 @@ export const POST = handler(async (request: Request) => {
   }
 
   const db = getDb();
-  const [{ recent }] = await db
-    .select({ recent: count() })
-    .from(uploads)
-    .where(
-      and(
-        eq(uploads.clerkUserId, user.id),
-        gt(uploads.createdAt, new Date(Date.now() - 60 * 60 * 1000)),
-      ),
-    );
-  if (recent >= UPLOADS_PER_HOUR) {
-    throw new ApiError(
-      429,
-      "RATE_LIMITED",
-      `You can upload ${UPLOADS_PER_HOUR} items an hour. Try again later.`,
-    );
-  }
+  const uploadId = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`);
+    const [{ recent }] = await tx
+      .select({ recent: count() })
+      .from(uploads)
+      .where(
+        and(
+          eq(uploads.clerkUserId, user.id),
+          gt(uploads.createdAt, new Date(Date.now() - 60 * 60 * 1000)),
+        ),
+      );
+    if (recent >= UPLOADS_PER_HOUR) {
+      throw new ApiError(
+        429,
+        "RATE_LIMITED",
+        `You can upload ${UPLOADS_PER_HOUR} items an hour. Try again later.`,
+      );
+    }
+    const [{ id }] = await tx
+      .insert(uploads)
+      .values({ clerkUserId: user.id, cid: "", bytes: 0 })
+      .returning({ id: uploads.id });
+    return id;
+  });
 
+  try {
+    const result = await pinItem(request);
+    await db
+      .update(uploads)
+      .set({ cid: result.cid, bytes: result.bytes })
+      .where(eq(uploads.id, uploadId));
+    return json(
+      { cid: result.cid, imageCid: result.imageCid },
+      { status: 201 },
+    );
+  } catch (error) {
+    await db.delete(uploads).where(eq(uploads.id, uploadId));
+    throw error;
+  }
+});
+
+/** Reads and validates the form, then pins the photo and the metadata JSON. */
+async function pinItem(request: Request) {
   let form: FormData;
   try {
     form = await request.formData();
@@ -89,6 +115,5 @@ export const POST = handler(async (request: Request) => {
   const cid = await pinJson(metadata);
   bytes += new TextEncoder().encode(JSON.stringify(metadata)).byteLength;
 
-  await db.insert(uploads).values({ clerkUserId: user.id, cid, bytes });
-  return json({ cid, imageCid }, { status: 201 });
-});
+  return { cid, imageCid, bytes };
+}

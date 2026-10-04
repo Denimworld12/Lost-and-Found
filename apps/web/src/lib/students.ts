@@ -74,11 +74,7 @@ export async function activateStudent({
   }
 
   // A student who switched wallets: take the old one off the whitelist first.
-  if (
-    existing &&
-    existing.walletAddress !== walletLower &&
-    existing.status === "verified"
-  ) {
+  if (existing && existing.walletAddress !== walletLower) {
     await revokeOnChain(getAddress(existing.walletAddress));
   }
 

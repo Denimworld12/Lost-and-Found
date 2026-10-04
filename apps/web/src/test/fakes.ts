@@ -37,6 +37,18 @@ export function fakeDb(results: unknown[] = []) {
       calls.push({ method: "update", args }),
       chain()
     ),
+    delete: (...args: unknown[]) => (
+      calls.push({ method: "delete", args }),
+      chain()
+    ),
+    execute: (...args: unknown[]) => (
+      calls.push({ method: "execute", args }),
+      chain()
+    ),
+    transaction: <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => (
+      calls.push({ method: "transaction", args: [] }),
+      fn(db)
+    ),
   };
   return { db, calls, queue };
 }

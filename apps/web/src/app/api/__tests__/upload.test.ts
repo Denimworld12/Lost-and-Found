@@ -40,9 +40,12 @@ function form(fields: Record<string, string>, image?: File) {
   return new Request("http://localhost/api/upload", { method: "POST", body });
 }
 
+/** Query results for the slot reservation: advisory lock, count, then the inserted row. */
+const reserve = (recent: number) => [[], [{ recent }], [{ id: 7 }]];
+
 beforeEach(() => {
   vi.clearAllMocks();
-  db = fakeDb([[{ recent: 0 }]]);
+  db = fakeDb(reserve(0));
   requireVerifiedStudent.mockResolvedValue({ user: { id: "user_1" } });
   pinImage.mockResolvedValue(IMAGE_CID);
   pinJson.mockResolvedValue(META_CID);
@@ -82,7 +85,33 @@ describe("POST /api/upload", () => {
     const webp = pinImage.mock.calls[0][0] as Buffer;
     expect((await sharp(webp).metadata()).format).toBe("webp");
     expect(pinJson).toHaveBeenCalledWith({ ...details, image: IMAGE_CID });
-    expect(db.calls.some((call) => call.method === "insert")).toBe(true);
+    const methods = db.calls.map((call) => call.method);
+    expect(methods.indexOf("insert")).toBeGreaterThan(-1);
+    expect(methods.indexOf("update")).toBeGreaterThan(
+      methods.indexOf("insert"),
+    );
+    expect(methods).not.toContain("delete");
+  });
+
+  it("reserves the slot under a per-user lock before pinning", async () => {
+    pinJson.mockImplementation(async () => {
+      const methods = db.calls.map((call) => call.method);
+      expect(methods.slice(0, 3)).toEqual(["transaction", "execute", "select"]);
+      expect(methods).toContain("insert");
+      return META_CID;
+    });
+    expect((await POST(form(details))).status).toBe(201);
+    expect(pinJson).toHaveBeenCalledOnce();
+  });
+
+  it("frees the reserved slot when pinning fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    pinJson.mockRejectedValue(new Error("pinata down"));
+    const response = await POST(form(details));
+    expect(response.status).toBeGreaterThanOrEqual(500);
+    const methods = db.calls.map((call) => call.method);
+    expect(methods).toContain("delete");
+    expect(methods).not.toContain("update");
   });
 
   it("works without a photo", async () => {
@@ -98,7 +127,7 @@ describe("POST /api/upload", () => {
   });
 
   it("validates the fields with the shared schema", async () => {
-    db = fakeDb([[{ recent: 0 }], [{ recent: 0 }], [{ recent: 0 }]]);
+    db = fakeDb([...reserve(0), [], ...reserve(0), [], ...reserve(0), []]);
     const response = await POST(form({ ...details, title: "x".repeat(61) }));
     expect(response.status).toBe(400);
     expect((await response.json()).error.message).toMatch(/^title:/);
@@ -109,10 +138,12 @@ describe("POST /api/upload", () => {
   });
 
   it("allows 5 uploads an hour", async () => {
-    db = fakeDb([[{ recent: 5 }]]);
+    db = fakeDb(reserve(5));
     const response = await POST(form(details));
     expect(response.status).toBe(429);
     expect((await response.json()).error.code).toBe("RATE_LIMITED");
+    expect(db.calls.map((call) => call.method)).not.toContain("insert");
+    expect(pinJson).not.toHaveBeenCalled();
   });
 
   it("refuses a declared body over the cap before reading it", async () => {
