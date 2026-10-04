@@ -24,6 +24,8 @@ export function ItemCard({
   metadataPending = false,
   priority = false,
   headingLevel = 3,
+  photoSrc,
+  preview = false,
   className,
 }: {
   item: Item;
@@ -32,19 +34,22 @@ export function ItemCard({
   priority?: boolean;
   /** Title heading level: 3 under a section heading (home), 2 directly under the page h1 (browse). */
   headingLevel?: 2 | 3;
+  /** Local photo preview (post wizard). */
+  photoSrc?: string;
+  /** Not posted yet: renders as a plain card, not a link. */
+  preview?: boolean;
   className?: string;
 }) {
   const title = itemTitle(item, metadata);
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  return (
-    <Link
-      href={`/items/${item.id.toString()}`}
-      className={cn(
-        "group flex flex-col gap-16 rounded-card border border-charcoal bg-carbon p-24 transition-colors hover:border-steel hover:bg-obsidian",
-        item.status === "Cancelled" && "opacity-50",
-        className,
-      )}
-    >
+  const frame = cn(
+    "group flex flex-col gap-16 rounded-card border border-charcoal bg-carbon p-24 transition-colors",
+    !preview && "hover:border-steel hover:bg-obsidian",
+    item.status === "Cancelled" && "opacity-50",
+    className,
+  );
+  const body = (
+    <>
       <div className="flex items-center justify-between gap-12">
         <CategoryLabel category={metadata?.category} />
         <StatusLabel status={item.status} />
@@ -54,6 +59,7 @@ export function ItemCard({
       ) : (
         <ItemPhoto
           image={metadata?.image}
+          localSrc={photoSrc}
           alt={title}
           note={metadata ? "No photo" : "Photo unavailable right now"}
           sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
@@ -89,6 +95,12 @@ export function ItemCard({
           <LostAgo lostOn={metadata?.lostOn} createdAt={item.createdAt} />
         </span>
       </div>
+    </>
+  );
+  if (preview) return <div className={frame}>{body}</div>;
+  return (
+    <Link href={`/items/${item.id.toString()}`} className={frame}>
+      {body}
     </Link>
   );
 }

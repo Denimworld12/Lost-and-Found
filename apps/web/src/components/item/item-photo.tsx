@@ -9,6 +9,7 @@ import { LatticeGlyph } from "./lattice-glyph";
  */
 export function ItemPhoto({
   image,
+  localSrc,
   alt,
   note,
   sizes,
@@ -17,6 +18,8 @@ export function ItemPhoto({
   className,
 }: {
   image?: string;
+  /** A local `blob:` preview (post wizard) shown instead of an IPFS photo. */
+  localSrc?: string;
   alt: string;
   /** Shown when there is no photo. */
   note: string;
@@ -25,7 +28,7 @@ export function ItemPhoto({
   dimmed?: boolean;
   className?: string;
 }) {
-  const src = image ? ipfsUrl(image) : null;
+  const src = localSrc ?? (image ? ipfsUrl(image) : null);
   return (
     <div
       className={cn(
@@ -40,6 +43,7 @@ export function ItemPhoto({
           fill
           sizes={sizes}
           priority={priority}
+          unoptimized={Boolean(localSrc)}
           className={cn("object-contain", dimmed && "opacity-70")}
         />
       ) : (
