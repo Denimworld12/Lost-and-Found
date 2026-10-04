@@ -411,12 +411,21 @@ Steps: logged-out browse loads items and images → a new college account onboar
 posts an item with a photo → Student B claims it and both see each other's contact → Student A confirms →
 Student B withdraws and the balances on Etherscan match → `/transparency` totals change.
 
-Checked on 4 Oct 2026: logged-out `/`, `/items`, `/items/6`, `/transparency`, `/how-it-works` and `/sign-in`
-load (200) with photos from the dedicated gateway, and the Clerk webhook answers. The wallet steps were run by
-the captain in MetaMask, but no transaction from them is on `sepolia-v1` yet: the newest contract event at
-11:44 UTC was item #9's `DisputeResolved` (block 11841534, 10:08 UTC, before the first production deploy at
-about 10:39 UTC), and the newest `uploads` row is from 09:23 UTC. Record the production transactions here once
-the run is repeated against the live URL.
+Checked on 4 Oct 2026 against the live URL, by reading the contract, the Neon `uploads` table and the page:
+
+| Step                                     | Result on production                                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logged-out browse loads items and images | Pass: `/`, `/items`, `/items/6`, `/transparency`, `/how-it-works`, `/sign-in` answer 200; photos load from the dedicated gateway through `/_next/image`                                                                                                                       |
+| New college account onboards to verified | Not run: no `students` row created after the deploy                                                                                                                                                                                                                           |
+| Post an item with a photo                | Pass: photo uploaded through `/api/upload` (11:57 UTC) and item #10 posted with 0.005 ETH, [`0xed505293…8e0e44`](https://sepolia.etherscan.io/tx/0xed505293483c4ca156008e5060df7a2752248ed47f19a478b937e048e78d0e44), from `0xC8F5…1829` (the Deployer wallet, not Student A) |
+| Claim, confirm, withdraw                 | Not run: #10 was cancelled a minute later, [`0x437bd6f1…0adfcb`](https://sepolia.etherscan.io/tx/0x437bd6f1458ff6b657b2e18e49e74909891ebe19e2b9ecfc2b6d3e2d450adfcb); no claim, confirm or withdraw on any item since the deploy                                              |
+| `/transparency` totals update            | Pass: 10 items posted, 0.002 ETH held, 0.0085 ETH waiting to be withdrawn (the cancelled 0.005 ETH reward credited back), "Listing cancelled · Item #10" newest; all match the contract at block 11842028                                                                     |
+
+The first production deploy (about 10:39 UTC) failed every database call because of the quoted
+`DATABASE_URL` above; uploads work since the redeploy. The full post → claim → confirm → withdraw sequence
+has passed on `sepolia-v1` through the same code on the dev server (Phase 8 live check above) but not yet
+through the production URL. To finish it, two verified students run it on the live URL, then add the claim,
+confirm and withdraw transactions to this table.
 
 ### Incident response
 
