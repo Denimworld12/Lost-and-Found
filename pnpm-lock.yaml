@@ -215,7 +215,7 @@ importers:
       '@clerk/ui':
         specifier: ^1.38.1
         version: 1.38.1(@types/react@19.3.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)
-      '@clf/shared':
+      '@milgaya/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@neondatabase/serverless':

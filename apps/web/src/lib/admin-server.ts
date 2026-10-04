@@ -1,6 +1,6 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { inArray } from "drizzle-orm";
 import {
   isAddressEqual,
@@ -67,7 +67,7 @@ export async function verifyAdminTx(
     throw new ApiError(
       400,
       "BAD_REQUEST",
-      "That transaction wasn't sent to the Lost & Found contract.",
+      "That transaction wasn't sent to the MilGaya contract.",
     );
   }
   if (!isAddressEqual(receipt.from, sender)) {

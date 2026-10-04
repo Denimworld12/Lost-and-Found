@@ -1,4 +1,4 @@
-import { lostAndFoundAbi } from "@clf/shared";
+import { lostAndFoundAbi } from "@milgaya/shared";
 import {
   BaseError,
   ContractFunctionExecutionError,

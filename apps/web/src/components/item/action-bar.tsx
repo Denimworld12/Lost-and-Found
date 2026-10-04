@@ -1,6 +1,6 @@
 "use client";
 
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";

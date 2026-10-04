@@ -1,5 +1,5 @@
 {
-  "name": "@clf/shared",
+  "name": "@milgaya/shared",
   "private": true,
   "version": "0.1.0",
   "description": "ABI, addresses, types and constants shared by the web app, scripts and subgraph",

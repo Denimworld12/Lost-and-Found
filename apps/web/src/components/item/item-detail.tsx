@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { ArrowLeftIcon } from "lucide-react";
 import { isAddressEqual, type Address } from "viem";
 import Link from "next/link";

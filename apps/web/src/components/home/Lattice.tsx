@@ -1,6 +1,6 @@
 "use client";
 
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import Link from "next/link";
 import { CATEGORY_TONE } from "@/components/item/status";
 import { NodeDot } from "@/components/item/node-dot";

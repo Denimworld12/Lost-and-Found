@@ -1,6 +1,6 @@
 # Runbook
 
-Operational notes for Campus Lost & Found. Filled in as each phase lands (deploy, rotate keys, pause,
+Operational notes for MilGaya. Filled in as each phase lands (deploy, rotate keys, pause,
 redeploy, faucet refills, incident response).
 
 ## Contract deployments
@@ -325,22 +325,23 @@ appear in the audit log with their notes; Overview warned that the verifier wall
 
 ## Production (Phase 11)
 
-Live at **<https://campus-lost-found-rosy-two.vercel.app>** since 4 Oct 2026, on Clerk's **development**
+Live at **<https://milgyaa.vercel.app>** since 4 Oct 2026, on Clerk's **development**
 instance and the free `*.vercel.app` URL (PLAN.md Phase 11 Option A). Clerk shows its small development
 banner and its development-instance limits apply. The contract is `sepolia-v1` from the table at the top;
 Phase 11 did not redeploy it (`pnpm hardhat ignition status sepolia-v1` in `contracts/`).
 
 ### Vercel project
 
-| Setting         | Value                                                        |
-| --------------- | ------------------------------------------------------------ |
-| Project         | `campus-lost-found` (team `nikhil-guptas-projects-1a80690d`) |
-| Production URL  | `https://campus-lost-found-rosy-two.vercel.app`              |
-| Root directory  | `apps/web`, "Include files outside root directory" on        |
-| Install command | `pnpm install --frozen-lockfile`                             |
-| Build command   | `pnpm --filter web build`                                    |
-| Node.js         | 22.x                                                         |
-| Git integration | Not connected: deploys come from the CLI only                |
+| Setting         | Value                                                                              |
+| --------------- | ---------------------------------------------------------------------------------- |
+| Project         | `milgaya` (team `nikhil-guptas-projects-1a80690d`)                                 |
+| Production URL  | `https://milgyaa.vercel.app`                                                       |
+| Old aliases     | `campus-lost-found-rosy-two.vercel.app`, `milgaya-app.vercel.app` (still attached) |
+| Root directory  | `apps/web`, "Include files outside root directory" on                              |
+| Install command | `pnpm install --frozen-lockfile`                                                   |
+| Build command   | `pnpm --filter web build`                                                          |
+| Node.js         | 22.x                                                                               |
+| Git integration | Not connected: deploys come from the CLI only                                      |
 
 The CLI is linked at the **repository root** (`.vercel/` there, git-ignored), not inside `apps/web` as
 PLAN.md shows: with the root directory set to `apps/web`, Vercel resolves it from the linked folder, so
@@ -372,7 +373,7 @@ Set with `vercel env add <NAME> production` / `preview`, values piped from `apps
 | `CLERK_WEBHOOK_SIGNING_SECRET`                                                   | production endpoint's secret (below)                                 | unset                                          |
 | `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `_SIGN_UP_URL` / `_SIGN_UP_FORCE_REDIRECT_URL` | `/sign-in` / `/sign-up` / `/onboarding`                              | same                                           |
 | `ALLOWED_EMAIL_DOMAIN`                                                           | from `.env.local`                                                    | same                                           |
-| `NEXT_PUBLIC_SITE_URL`                                                           | `https://campus-lost-found-rosy-two.vercel.app`                      | unset (preview URLs change per deploy)         |
+| `NEXT_PUBLIC_SITE_URL`                                                           | `https://milgyaa.vercel.app`                                         | unset (preview URLs change per deploy)         |
 | `SENTRY_DSN`                                                                     | from `.env.local`                                                    | same                                           |
 | `NEXT_PUBLIC_SUBGRAPH_URL`                                                       | `https://api.studio.thegraph.com/query/1762923/lost-and-found/0.0.1` | unset (the subgraph indexes `sepolia-v1` only) |
 | `NEXT_PUBLIC_SENTRY_DSN`                                                         | unset (no Sentry SDK in the app yet)                                 | unset                                          |
@@ -393,7 +394,7 @@ Set with `vercel env add <NAME> production` / `preview`, values piped from `apps
 
 ### Clerk webhook
 
-Endpoint `https://campus-lost-found-rosy-two.vercel.app/api/webhooks/clerk` for `user.created`,
+Endpoint `https://milgyaa.vercel.app/api/webhooks/clerk` for `user.created`,
 `user.updated`, `user.deleted` (Clerk dashboard → Configure → Webhooks; Svix endpoint
 `ep_3KE8dRULajP45EpTV4F83a4sOdj`). It was registered through the Backend API instead of the dashboard:
 `POST https://api.clerk.com/v1/webhooks/svix_url` with `CLERK_SECRET_KEY` returns a one-time Svix portal link.
@@ -420,7 +421,7 @@ Every account below is the captain's; nobody else holds a login.
 
 | Service         | What it holds                                                                                                                             |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Vercel          | Project `campus-lost-found`, env vars, deployments                                                                                        |
+| Vercel          | Project `milgaya`, env vars, deployments                                                                                                  |
 | Clerk           | Development instance: users, roles, MetaMask links, webhook                                                                               |
 | Neon            | Postgres database in `DATABASE_URL`                                                                                                       |
 | Pinata          | API JWT, dedicated gateway and its Gateway Key                                                                                            |

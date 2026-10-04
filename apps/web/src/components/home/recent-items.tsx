@@ -6,7 +6,7 @@ import { ItemCard, ItemCardSkeleton } from "@/components/item/item-card";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/hooks/useItems";
 import { useMetadata } from "@/hooks/useMetadata";
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 
 const scrollRow =
   "-mx-16 flex snap-x snap-mandatory gap-16 overflow-x-auto px-16 pb-4 sm:-mx-24 sm:px-24 md:mx-0 md:grid md:grid-cols-2 md:gap-24 md:overflow-visible md:px-0 lg:grid-cols-4";

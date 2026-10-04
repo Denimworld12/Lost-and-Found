@@ -1,4 +1,4 @@
-import { HARDHAT_CHAIN_ID, SEPOLIA_CHAIN_ID } from "@clf/shared";
+import { HARDHAT_CHAIN_ID, SEPOLIA_CHAIN_ID } from "@milgaya/shared";
 import type { Address, Hash } from "viem";
 import { hardhat, sepolia } from "viem/chains";
 

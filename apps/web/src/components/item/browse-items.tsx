@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORIES, type Category, type ItemStatus } from "@clf/shared";
+import { CATEGORIES, type Category, type ItemStatus } from "@milgaya/shared";
 import { SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";

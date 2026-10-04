@@ -1,4 +1,4 @@
-import { CATEGORIES, type Category } from "@clf/shared";
+import { CATEGORIES, type Category } from "@milgaya/shared";
 import { parseEther } from "viem";
 import { itemDetailsSchema, type ItemDetails } from "./ipfs";
 import { formatEthValue } from "./format";

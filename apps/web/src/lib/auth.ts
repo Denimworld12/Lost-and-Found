@@ -48,7 +48,7 @@ export async function requireCollegeUser(): Promise<{
     throw new ApiError(
       403,
       "NOT_ELIGIBLE",
-      "Only college email accounts can use Campus Lost & Found.",
+      "Only college email accounts can use MilGaya.",
     );
   }
   return { user, email };

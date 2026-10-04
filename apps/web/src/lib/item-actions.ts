@@ -1,4 +1,4 @@
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { isAddressEqual, type Address } from "viem";
 
 /** Who is looking at the item page, from the ActionBar matrix in docs/UI_SPEC.md. */

@@ -1,4 +1,4 @@
-import type { Category, ItemStatus } from "@clf/shared";
+import type { Category, ItemStatus } from "@milgaya/shared";
 import { cn } from "@/lib/utils";
 import { NodeDot } from "./node-dot";
 import { CATEGORY_TONE, STATUS_META } from "./status";

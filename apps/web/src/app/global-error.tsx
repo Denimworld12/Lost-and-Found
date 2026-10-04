@@ -33,7 +33,7 @@ export default function GlobalError({
           fontFamily: "ui-sans-serif, system-ui, sans-serif",
         }}
       >
-        <title>Something went wrong — Campus Lost &amp; Found</title>
+        <title>Something went wrong — MilGaya</title>
         <h1
           style={{
             margin: 0,

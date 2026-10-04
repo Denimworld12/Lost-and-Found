@@ -4,7 +4,7 @@ import {
   lostAndFoundAddresses,
   type Item,
   type ItemStatus,
-} from "@clf/shared";
+} from "@milgaya/shared";
 import {
   createPublicClient,
   getAbiItem,

@@ -1,4 +1,4 @@
-import type { Item } from "@clf/shared";
+import type { Item } from "@milgaya/shared";
 import { isAddressEqual, type Address } from "viem";
 import { ApiError } from "./api";
 import { CONTACT_STATUSES } from "./contact-statuses";

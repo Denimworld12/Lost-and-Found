@@ -1,4 +1,4 @@
-import type { Item, ItemStatus } from "@clf/shared";
+import type { Item, ItemStatus } from "@milgaya/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const chain = vi.hoisted(() => ({
