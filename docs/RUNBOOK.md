@@ -157,3 +157,67 @@ least 0.01 Sepolia ETH on it. A verification that failed (out of gas, RPC down) 
 `students`; once the wallet is funded the student can press "Try again" in onboarding, or an admin can call
 `POST /api/admin/students/<clerk user id>/retry`. Verifier sends are serialised across server instances by
 Postgres advisory lock 42.
+
+## Core flows (Phase 8)
+
+Every write in the app goes through `useTxFlow` (`src/hooks/useTxFlow.ts`, logic in `src/lib/tx-flow.ts`):
+wallet connected → Sepolia → connected wallet equals the Clerk-linked wallet → (post only: upload) → gas +
+value ≤ balance → `simulateContract` → MetaMask → receipt. A revert is shown with the copy from
+`src/lib/errors.ts` before MetaMask opens. A student whose wallet isn't whitelisted sees "Finish activating
+your account before posting or claiming."
+
+The arbiter's "Pay the finder / Return to owner" buttons arrive with the Phase 9 admin console. Until then
+resolve a dispute from a script with `ARBITER_PRIVATE_KEY` (`resolveDispute(id, finderWins)`), and change
+the confirm window with `ADMIN_PRIVATE_KEY` (`setConfig(minReward, claimStake, confirmWindow)`).
+
+### Timeout demo
+
+1. Admin calls `setConfig(minReward, claimStake, 300)` (5 minutes, the minimum) **before** the claim.
+2. The finder claims; the 5-minute window is locked into that item.
+3. Admin restores `setConfig(minReward, claimStake, 259200)` straight away. The claimed item keeps 5 minutes.
+4. After 5 minutes of chain time the finder's item page and `/me` show "Collect reward".
+
+### Live check on `sepolia-v1` (4 Oct 2026, blocks 11841054–11841148)
+
+Run through the web UI (dev server) as two Clerk test users, `p8-student-a+clerk_test@gmail.com` (Student A
+wallet) and `p8-student-b+clerk_test@gmail.com` (Student B wallet), with a test EIP-1193 wallet injected into
+the browser that signs with each student's keystore key. Disputes were resolved and the window changed by
+script as above. Deployer funded A 0.004, B 0.001, admin 0.0005 and arbiter 0.0005 ETH first.
+
+| Step                                              | Transaction                                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Student A posts #2 with a photo (0.001 ETH)       | [`0x7e886ab7…7c2817`](https://sepolia.etherscan.io/tx/0x7e886ab720090d409a08a247692acb1e063e47d0e4e701862078e1270d7c2817) |
+| Student B claims #2 (0.0005 ETH deposit)          | [`0xdc85313f…cb2e48`](https://sepolia.etherscan.io/tx/0xdc85313f671844b7344f0c21062c3c9cb0cec7aa7a395447783987702dcb2e48) |
+| Student A rejects the claim (deposit to A)        | [`0x665c6e1a…7ff58e`](https://sepolia.etherscan.io/tx/0x665c6e1a04761683160c74ae19b1ecc2295a6888461ffc2f1fa799eae97ff58e) |
+| Student B claims #2 again                         | [`0xa81cdd64…5dd60b`](https://sepolia.etherscan.io/tx/0xa81cdd64d967eed456886925a5249c7c9c5eaf42ceb6ad7f9ca90c80305dd60b) |
+| Student A confirms the return (0.0015 ETH to B)   | [`0xdc5e2279…ae0c07`](https://sepolia.etherscan.io/tx/0xdc5e22793257250776ccdcaae171f3caff6775b3729dc233c507c6b3abae0c07) |
+| Student B withdraws 0.0015 ETH (item page)        | [`0xeac804f8…deac2b`](https://sepolia.etherscan.io/tx/0xeac804f8568345c1216c53541c1410585c161cf930c9c1bd05ebf47adbdeac2b) |
+| Student A posts #3 without a photo                | [`0xb063ef60…448236`](https://sepolia.etherscan.io/tx/0xb063ef6087029558c310aeccd298a5d6a79b85b42a15e9d8395e05a5e7448236) |
+| Student B claims #3                               | [`0x0aa07fe1…ec8c2d`](https://sepolia.etherscan.io/tx/0x0aa07fe150771a51a1d0dfc260ac96ea120cf121bd4dae7fd5db54aa81ec8c2d) |
+| Student B (finder) opens a dispute                | [`0x217ad3db…0ec314`](https://sepolia.etherscan.io/tx/0x217ad3db0801a0f8d88859652536d698025202872801ff052e096118b50ec314) |
+| Arbiter `resolveDispute(3, true)`: finder paid    | [`0x82d1f80d…d503ac`](https://sepolia.etherscan.io/tx/0x82d1f80d10d2c2333b0f7034e0f1c0ffd0c70b700589c0a56c47d9f5d1d503ac) |
+| Student A posts #4 (0.002 ETH)                    | [`0xdd9daa28…c9146a`](https://sepolia.etherscan.io/tx/0xdd9daa28405d70f4e34f3e3f0c7306c2f6b744698fceedf8862d61d689c9146a) |
+| Student B claims #4                               | [`0x73ebc3d9…e1cd07`](https://sepolia.etherscan.io/tx/0x73ebc3d928eac64689e64afdd60754c56c747ce26374fba611b8773187e1cd07) |
+| Student A (owner) opens a dispute                 | [`0x0dd50b6b…8c33e0`](https://sepolia.etherscan.io/tx/0x0dd50b6bde63f8ceec4c3785b4601067e32d54c1afebe25520e2c844878c33e0) |
+| Arbiter `resolveDispute(4, false)`: item reopened | [`0xca8a1a03…15a48f`](https://sepolia.etherscan.io/tx/0xca8a1a03611468be38f6b26aa07b7a05a24a4b8b506d0a6b5db80f9b8e15a48f) |
+| Student A cancels #4                              | [`0xeb881f59…acefe3`](https://sepolia.etherscan.io/tx/0xeb881f59c61e6b606a4b3386246ebe503a4982d94d812a974f7297ef78acefe3) |
+| Student A withdraws 0.003 ETH (`/me`)             | [`0xc828647d…42ea2e`](https://sepolia.etherscan.io/tx/0xc828647d62f621f2aae242750f5911e79c1c6db5acb3fab54c0410f8b542ea2e) |
+| Admin `setConfig(…, 300)`: 5-minute window        | [`0x5e3c0438…1f2a6b`](https://sepolia.etherscan.io/tx/0x5e3c04383e485dc215ccb3e2e65d4c62291daab78286631e98814719b41f2a6b) |
+| Student A posts #5                                | [`0xa7e9ac56…aec62e`](https://sepolia.etherscan.io/tx/0xa7e9ac560c8ea45d8f1a396c8b9f6364695e467356ce5e6216c06b3927aec62e) |
+| Student B claims #5 (window locked at 300 s)      | [`0x27c26917…50ea5e`](https://sepolia.etherscan.io/tx/0x27c2691763d771d5dd5023f4ead98fbd43abc633a10301ad5e3a9366f150ea5e) |
+| Admin `setConfig(…, 259200)`: 3 days restored     | [`0x62bd2e50…ae50c7`](https://sepolia.etherscan.io/tx/0x62bd2e50c5a3fc4864103098822c9f9d85a7c60d4f3c7e41cdfbb60cadae50c7) |
+| Student B collects after the window (`/me`)       | [`0x91aed83d…eab430`](https://sepolia.etherscan.io/tx/0x91aed83d9673561928158d949b9f1d4ca4ddef4a3fab54668e2e863ae0eab430) |
+| Student B withdraws 0.003 ETH (header chip)       | [`0x19716a80…83d16b`](https://sepolia.etherscan.io/tx/0x19716a802d2221b59cf028d910e318560ccbe6251ab33356dffabeb98e83d16b) |
+
+Also checked: MetaMask rejection shows "Cancelled in MetaMask." and keeps the form; retrying reuses the
+pinned CID (one upload); owner and finder each see the other's college email after a claim; each side's
+open item page updates within seconds of the other's transaction, with a toast; the ActionBar switches from
+the dispute buttons to "Collect reward" on chain time; no console errors; 360 px layout.
+
+### Known issue: dedicated Pinata gateway refuses new uploads
+
+The gateway in `NEXT_PUBLIC_PINATA_GATEWAY` answers 401 `ERR_ID:00024` ("This content cannot be requested
+through the gateway you are using") for CIDs pinned by `PINATA_JWT`, so photos and details of new items show
+"unavailable". The same CIDs load from `gateway.pinata.cloud`. Check in the Pinata dashboard that the
+gateway and the API key belong to the same account and that the gateway's access controls allow these files.
+Until it's fixed, run the app with `NEXT_PUBLIC_PINATA_GATEWAY=gateway.pinata.cloud` (or leave it unset).

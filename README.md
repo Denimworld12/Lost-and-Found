@@ -55,7 +55,9 @@ A public audit page read live from the chain: current rules (minimum reward, fin
 window), escrow totals, which wallet holds each role, and the latest contract events with links to every
 transaction.
 
-These are the logged-out public pages. Sign-in and the posting/claiming flows are still in progress.
+These are the logged-out public pages. Signed-in students can also report an item, claim one, confirm,
+reject or dispute a claim, collect after the timeout and withdraw, all from the item page and My items. The
+admin console is still in progress.
 
 ## More
 
