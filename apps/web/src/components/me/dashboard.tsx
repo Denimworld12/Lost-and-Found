@@ -56,7 +56,7 @@ export function Dashboard() {
           >
             Available to withdraw
           </h2>
-          {withdrawable.isPending ? (
+          {withdrawable.isLoading ? (
             <Skeleton className="h-28 w-120" />
           ) : (
             <RewardAmount wei={balance} exact className="text-subheading" />
