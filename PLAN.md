@@ -312,9 +312,9 @@ type Stats @entity(immutable: false) {
 }
 ```
 
-- [ ] Handler per event in `src/mapping.ts`, updating `Item`, adding an `ItemEvent`, updating `Stats`
-- [ ] `startBlock` in `subgraph.yaml` = deploy block (otherwise indexing takes hours)
-- [ ] Copy `subgraph.yaml` to a staging variant pointing at the staging contract
+- [x] Handler per event in `src/mapping.ts`, updating `Item`, adding an `ItemEvent`, updating `Stats`
+- [x] `startBlock` in `subgraph.yaml` = deploy block (otherwise indexing takes hours)
+- [x] Copy `subgraph.yaml` to a staging variant pointing at the staging contract
 - [ ] Deploy: `graph codegen && graph build && graph auth <DEPLOY_KEY> && graph deploy campus-lost-found` (version label `v0.1.0`, bump each deploy)
 - [ ] Copy the Studio query URL into `NEXT_PUBLIC_SUBGRAPH_URL`
 

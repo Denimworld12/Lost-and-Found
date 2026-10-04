@@ -1,0 +1,50 @@
+enum ItemStatus {
+  Open
+  Claimed
+  Disputed
+  Completed
+  Cancelled
+}
+
+type Item @entity(immutable: false) {
+  id: ID! # item id as string
+  itemId: BigInt!
+  owner: Bytes!
+  finder: Bytes # null until claimed, and again after a rejected claim or a dispute the owner wins
+  reward: BigInt!
+  stake: BigInt! # locked at claim time; 0 while unclaimed
+  metadataCID: String!
+  status: ItemStatus!
+  createdAt: BigInt! # seconds
+  claimedAt: BigInt # seconds; null while unclaimed
+  claimWindow: BigInt! # confirm window locked at claim time, seconds; 0 while unclaimed
+  updatedAt: BigInt! # seconds, block time of the latest event on the item
+  events: [ItemEvent!]! @derivedFrom(field: "item")
+}
+
+type ItemEvent @entity(immutable: true) {
+  id: Bytes! # txHash + logIndex
+  item: Item!
+  kind: String! # Posted, Claimed, Confirmed, Rejected, Disputed, Resolved, TimeoutClaimed, Cancelled
+  actor: Bytes!
+  amount: BigInt
+  finderWins: Boolean # Resolved only
+  txHash: Bytes!
+  timestamp: BigInt!
+}
+
+type Stats @entity(immutable: false) {
+  id: ID! # "global"
+  itemsPosted: BigInt!
+  itemsReturned: BigInt!
+  totalRewardsPaid: BigInt!
+  openItems: BigInt!
+}
+
+type Config @entity(immutable: false) {
+  id: ID! # "global"
+  minReward: BigInt!
+  claimStake: BigInt!
+  confirmWindow: BigInt! # seconds; copied onto each item as claimWindow when it is claimed
+  updatedAt: BigInt!
+}
