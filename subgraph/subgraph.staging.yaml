@@ -1,0 +1,48 @@
+specVersion: 1.3.0
+description: Campus Lost & Found escrow items, their history and totals
+repository: https://github.com/Denimworld12/Lost-and-Found
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: LostAndFound
+    network: sepolia
+    source:
+      abi: LostAndFound
+      # sepolia-staging-v1 (docs/RUNBOOK.md); keep in step with subgraph.yaml
+      address: "0x37542E00914F3758b6E60b86eF8076207bDCa1F6"
+      startBlock: 11836342
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Item
+        - ItemEvent
+        - Stats
+        - Config
+      abis:
+        - name: LostAndFound
+          file: ../contracts/ignition/deployments/sepolia-staging-v1/artifacts/LostAndFoundModule#LostAndFound.json
+      eventHandlers:
+        - event: ItemPosted(indexed uint256,indexed address,uint256,string)
+          handler: handleItemPosted
+        - event: ItemClaimed(indexed uint256,indexed address,uint256)
+          handler: handleItemClaimed
+        - event: ReturnConfirmed(indexed uint256,indexed address,uint256)
+          handler: handleReturnConfirmed
+        - event: ClaimRejected(indexed uint256,indexed address,uint256)
+          handler: handleClaimRejected
+        - event: DisputeRaised(indexed uint256,indexed address)
+          handler: handleDisputeRaised
+        - event: DisputeResolved(indexed uint256,bool,indexed address)
+          handler: handleDisputeResolved
+        - event: TimeoutClaimed(indexed uint256,indexed address,uint256)
+          handler: handleTimeoutClaimed
+        - event: ItemCancelled(indexed uint256)
+          handler: handleItemCancelled
+        - event: ConfigUpdated(uint256,uint256,uint64)
+          handler: handleConfigUpdated
+      file: ./src/mapping.ts

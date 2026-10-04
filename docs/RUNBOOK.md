@@ -123,6 +123,30 @@ First run on `sepolia-v1` (item #1, blocks 11836911–11836918):
 | Student A `confirmReturn(1)`          | [`0xe050981b…eff8a0`](https://sepolia.etherscan.io/tx/0xe050981b61061209563a9747dbf0dde59c1b0b30f8816ff9267a45bf67eff8a0) |
 | Student B `withdraw` (0.0015 ETH)     | [`0x42eda536…02a6a4`](https://sepolia.etherscan.io/tx/0x42eda5364b699faf2a699d3fbbde5858ade30bcbdb4a3551e5849ca1ac02a6a4) |
 
+## Subgraph (Phase 5)
+
+`subgraph/` indexes the item events into `Item`, `ItemEvent`, `Stats` and `Config` entities.
+`subgraph.yaml` follows `sepolia-v1` from its deploy block; `subgraph.staging.yaml` follows `sepolia-staging-v1`.
+Both read the ABI from the contract's Ignition artifact, so no ABI copy needs updating.
+
+```bash
+pnpm --filter subgraph codegen         # generated/ (types from schema.graphql and the ABI)
+pnpm --filter subgraph build           # build/ (compiled mappings for subgraph.yaml)
+pnpm --filter subgraph build:staging   # build/staging/ for subgraph.staging.yaml
+pnpm --filter subgraph test            # Matchstick tests in subgraph/tests (downloads the binary on first run)
+```
+
+Deploying to Subgraph Studio needs the deploy key from the Studio project `campus-lost-found`:
+
+```bash
+cd subgraph
+pnpm exec graph auth <DEPLOY_KEY>
+pnpm exec graph deploy campus-lost-found --version-label v0.1.0   # bump the label on every deploy
+```
+
+Then put the Studio query URL in `NEXT_PUBLIC_SUBGRAPH_URL`. A new contract deployment (`sepolia-v2`)
+needs its address and deploy block in the manifests, and the ABI path if the deployment id changed.
+
 ## Authentication and student verification
 
 Values for `apps/web/.env.local` (git-ignored; Vercel env vars in production). Never paste them into chat.

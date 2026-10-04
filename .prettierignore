@@ -8,6 +8,8 @@ contracts/types
 contracts/ignition/deployments
 subgraph/build
 subgraph/generated
+subgraph/tests/.bin
+subgraph/tests/.latest.json
 packages/shared/src/abi.ts
 packages/shared/src/addresses.ts
 # Spec documents are authored by hand; keep their formatting as written.
