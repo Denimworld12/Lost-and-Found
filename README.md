@@ -6,6 +6,8 @@ confirms the return (or the response window passes) the finder withdraws the rew
 Disputes go to a campus-security arbiter, and no role, admins included, can move escrowed funds.
 It runs on the Ethereum Sepolia testnet, so all money is free test ETH.
 
+**Live app:** <https://milgyaa.vercel.app>
+
 **Deployed contract:** [`0x15C6A0d31Cd71a157b8ed0ff46f4F9CA84A0c1dD` on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x15C6A0d31Cd71a157b8ed0ff46f4F9CA84A0c1dD#code)
 (source verified on Etherscan, Blockscout and Sourcify).
 
