@@ -18,6 +18,7 @@ import { toastResult } from "@/components/tx/toast";
 import { useLinkedWallet } from "@/hooks/useLinkedWallet";
 import { appChain } from "@/lib/chain";
 import { lostAndFound } from "@/lib/contract";
+import { awaitSubgraphBlock } from "@/lib/graph";
 import {
   executeTx,
   IDLE_SNAPSHOT,
@@ -141,6 +142,7 @@ export function useTxFlow() {
         const result = await executeTx(deps, request, setSnapshot);
         if (result.state === "confirmed") {
           toastResult("success", request.successMessage);
+          if (result.receipt) awaitSubgraphBlock(result.receipt.blockNumber);
           const account = deps.getConnection().address;
           if (account)
             await invalidateAfterTx(

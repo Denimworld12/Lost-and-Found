@@ -16,6 +16,7 @@ import { useMetadata } from "@/hooks/useMetadata";
 import { useIsVerified, useWithdrawable } from "@/hooks/useWallet";
 import { formatDay } from "@/lib/format";
 import { viewerRole, type ViewerRole } from "@/lib/item-actions";
+import { SyncingNote } from "@/components/tx/syncing-note";
 import { ActionBar } from "./action-bar";
 import { AddressChip } from "./address-chip";
 import { ContactCard } from "./contact-card";
@@ -113,6 +114,7 @@ export function ItemDetail({ initialItem }: { initialItem: Item }) {
             )}
           </div>
 
+          <SyncingNote />
           <StatusPanel id={item.id} status={item.status} />
 
           {metadataError && (

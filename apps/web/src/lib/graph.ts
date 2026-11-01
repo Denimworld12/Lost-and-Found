@@ -16,7 +16,8 @@ import {
  * When `NEXT_PUBLIC_SUBGRAPH_URL` is set, the subgraph (PLAN.md Phase 5) is the primary
  * source. Each query falls back to reading the contract directly (`itemCount` + `getItem`
  * via multicall, latest 50 items, or `eth_getLogs` for history) when the subgraph errors or
- * its indexed block is more than {@link SUBGRAPH_MAX_LAG} blocks behind the chain head.
+ * its indexed block is more than {@link SUBGRAPH_MAX_LAG} blocks behind the chain head, or
+ * behind the receipt block of this tab's latest write ({@link awaitSubgraphBlock}).
  * Without the variable (local development) only the contract path runs. See
  * docs/DECISIONS.md.
  */
@@ -46,6 +47,35 @@ function subgraphUrl(): string | null {
 }
 
 class SubgraphUnavailable extends Error {}
+
+/**
+ * Receipt block of this tab's latest confirmed write that the subgraph hasn't indexed yet.
+ * While set, subgraph answers older than it are skipped for the contract, and the views
+ * show "Syncing…".
+ */
+let syncBlock: bigint | null = null;
+const syncListeners = new Set<() => void>();
+
+function setSyncBlock(block: bigint | null) {
+  syncBlock = block;
+  for (const listener of syncListeners) listener();
+}
+
+/** Call with a confirmed write's receipt block: reads come from the contract until the subgraph reaches it. */
+export function awaitSubgraphBlock(block: bigint) {
+  if (!subgraphUrl() || (syncBlock !== null && syncBlock >= block)) return;
+  setSyncBlock(block);
+}
+
+/** True while the subgraph hasn't indexed this tab's latest write. */
+export function isSubgraphSyncing(): boolean {
+  return syncBlock !== null;
+}
+
+export function subscribeSubgraphSync(listener: () => void): () => void {
+  syncListeners.add(listener);
+  return () => syncListeners.delete(listener);
+}
 
 const bigintString = z
   .string()
@@ -153,8 +183,14 @@ async function querySubgraph<T extends z.ZodType>(
     throw new SubgraphUnavailable("Unexpected subgraph response");
   const meta = metaSchema.safeParse((body.data as { _meta?: unknown })._meta);
   if (!meta.success) throw new SubgraphUnavailable("Subgraph _meta missing");
-  if (head !== null && head - BigInt(meta.data.block.number) > SUBGRAPH_MAX_LAG)
+  const indexed = BigInt(meta.data.block.number);
+  if (head !== null && head - indexed > SUBGRAPH_MAX_LAG)
     throw new SubgraphUnavailable("Subgraph is behind the chain");
+  if (syncBlock !== null) {
+    if (indexed < syncBlock)
+      throw new SubgraphUnavailable("Subgraph hasn't indexed the latest write");
+    setSyncBlock(null);
+  }
   return parsed.data;
 }
 

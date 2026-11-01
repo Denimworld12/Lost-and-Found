@@ -19,6 +19,7 @@ vi.mock("../contract", () => ({
 }));
 
 const {
+  awaitSubgraphBlock,
   CHAIN_FALLBACK_LIMIT,
   getItem,
   getItems,
@@ -26,6 +27,8 @@ const {
   getItemsByUser,
   getStats,
   getUserHistory,
+  isSubgraphSyncing,
+  subscribeSubgraphSync,
   SUBGRAPH_PAGE_SIZE,
   toItemEvent,
 } = await import("../graph");
@@ -396,6 +399,52 @@ describe("with a subgraph", () => {
     expect(chain.requested).toEqual([]);
     expect((await getItem(3n))?.status).toBe("Open");
     expect(chain.requested).toEqual([[3n]]);
+  });
+
+  it("reads the contract and reports syncing until the subgraph indexes a write's receipt block", async () => {
+    // Item 2 was just claimed on chain (block 1_000); the subgraph still has it Open.
+    chain.items[1] = makeItem(2, "Claimed", 30n, FINDER);
+    let indexed = 998;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              data: {
+                item: rawItem(
+                  2,
+                  indexed < 1_000 ? "Open" : "Claimed",
+                  "30",
+                  FINDER,
+                ),
+                _meta: { block: { number: indexed } },
+              },
+            }),
+          ),
+      ),
+    );
+    const changes = vi.fn();
+    const unsubscribe = subscribeSubgraphSync(changes);
+
+    awaitSubgraphBlock(1_000n);
+    expect(isSubgraphSyncing()).toBe(true);
+    expect((await getItem(2n))?.status).toBe("Claimed");
+    expect(chain.requested).toEqual([[2n]]);
+    expect(isSubgraphSyncing()).toBe(true);
+
+    indexed = 1_000;
+    expect((await getItem(2n))?.status).toBe("Claimed");
+    expect(chain.requested).toEqual([[2n]]);
+    expect(isSubgraphSyncing()).toBe(false);
+    expect(changes).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+
+  it("doesn't wait for the subgraph when none is configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUBGRAPH_URL", "");
+    awaitSubgraphBlock(1_000n);
+    expect(isSubgraphSyncing()).toBe(false);
   });
 
   it("getItemsByUser queries owner and finder by lowercase address", async () => {

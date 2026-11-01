@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/item/empty-state";
 import { LocalTime } from "@/components/item/local-time";
 import { NodeDot } from "@/components/item/node-dot";
 import { RewardAmount } from "@/components/item/reward-amount";
+import { SyncingNote } from "@/components/tx/syncing-note";
 import { WithdrawAction } from "@/components/tx/withdraw-action";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +46,7 @@ export function Dashboard() {
           <p className="text-body text-cloud">
             Your reports, claims and payouts on Sepolia.
           </p>
+          <SyncingNote />
         </div>
         <section
           aria-labelledby="balance-title"
