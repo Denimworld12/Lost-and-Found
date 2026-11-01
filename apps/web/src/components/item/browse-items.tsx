@@ -17,6 +17,7 @@ import {
 import { useItems } from "@/hooks/useItems";
 import { useMetadataMap } from "@/hooks/useMetadata";
 import { CHAIN_FALLBACK_LIMIT, type ItemSort } from "@/lib/graph";
+import { SyncingNote } from "@/components/tx/syncing-note";
 import { EmptyState } from "./empty-state";
 import { ItemCard, ItemCardSkeleton } from "./item-card";
 import { NodeDot } from "./node-dot";
@@ -204,6 +205,7 @@ export function BrowseItems() {
         >
           {countText}
         </p>
+        <SyncingNote />
         {data?.source === "chain" && data.totalPosted > 0n && (
           <p className="inline-flex items-center gap-7 text-caption text-cloud">
             <NodeDot tone="cyan" />

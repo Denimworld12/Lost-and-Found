@@ -315,8 +315,9 @@ type Stats @entity(immutable: false) {
 - [x] Handler per event in `src/mapping.ts`, updating `Item`, adding an `ItemEvent`, updating `Stats`
 - [x] `startBlock` in `subgraph.yaml` = deploy block (otherwise indexing takes hours)
 - [x] Copy `subgraph.yaml` to a staging variant pointing at the staging contract
-- [ ] Deploy: `graph codegen && graph build && graph auth <DEPLOY_KEY> && graph deploy campus-lost-found` (version label `v0.1.0`, bump each deploy)
-- [ ] Copy the Studio query URL into `NEXT_PUBLIC_SUBGRAPH_URL`
+- [x] Deploy: `graph codegen && graph build && graph auth <DEPLOY_KEY> && graph deploy campus-lost-found` (version label `v0.1.0`, bump each deploy) — published by the human as `lost-and-found` v0.0.1 on 4 Oct 2026 (see `docs/RUNBOOK.md`)
+- [x] Copy the Studio query URL into `NEXT_PUBLIC_SUBGRAPH_URL`
+- [x] `apps/web/src/lib/graph.ts` queries the subgraph first and falls back to the contract on error or lag (see `docs/DECISIONS.md`, 2026-11-02)
 
 **Done when:** querying `{ items(first: 5) { id status reward } }` in Studio returns the items created in Phase 4.
 
@@ -341,7 +342,7 @@ pnpm dlx shadcn@latest init            # then add: button dialog sheet tabs badg
 - [x] `src/components/providers.tsx` (`'use client'`): `WagmiProvider` + `QueryClientProvider` + `Toaster`
 - [x] `src/lib/contract.ts`: `{ address, abi }` from `@milgaya/shared`, typed read helpers
 - [x] `src/lib/graph.ts`: typed queries `getItems(filters, cursor)`, `getItem(id)`, `getItemsByUser(addr)`, `getStats()`
-- [x] Fallback (today the only path; Phase 5 not built yet, see `docs/DECISIONS.md`): if the subgraph errors or is more than 50 blocks behind (`_meta { block { number } }`), read `itemCount` + `getItem` via viem `multicall` (latest 50 items)
+- [x] Fallback (see `docs/DECISIONS.md`): if the subgraph errors or is more than 50 blocks behind (`_meta { block { number } }`), read `itemCount` + `getItem` via viem `multicall` (latest 50 items)
 - [x] `src/lib/ipfs.ts`: `ipfsUrl(cid)` using the Pinata gateway; `fetchMetadata(cid)` with zod schema + React Query cache (`staleTime: Infinity`, CIDs never change)
 - [x] `src/lib/format.ts`: `formatEth(wei)` (max 4 decimals, "0.01 ETH"), `shortAddress`, relative time, countdown
 - [x] Layout shell: header, mobile bottom nav, footer, skip link (UI_SPEC → "App shell")

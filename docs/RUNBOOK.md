@@ -411,9 +411,8 @@ Its signing secret is in `CLERK_WEBHOOK_SIGNING_SECRET` (production). A test `us
 - Alchemy: no browser key (see `NEXT_PUBLIC_SEPOLIA_RPC_URL`), so no domain allowlist is needed.
 - Subgraph: the captain published `lost-and-found` v0.0.1 to Subgraph Studio on 4 Oct 2026 (indexes
   `sepolia-v1`; `items`, `itemEvents`, `stats`, `config`), and its query URL was added to production and
-  redeployed. The app doesn't query it yet: `NEXT_PUBLIC_SUBGRAPH_URL` only adds its origin to the CSP, and
-  `apps/web/src/lib/graph.ts` still reads the contract directly. Switching `graph.ts` to the subgraph (with the
-  contract as fallback) is the remaining Phase 5 code.
+  redeployed. `apps/web/src/lib/graph.ts` queries it first and falls back to reading the contract when it errors
+  or lags (rules in `docs/DECISIONS.md`, 2026-11-02); `NEXT_PUBLIC_SUBGRAPH_URL` also adds its origin to the CSP.
 
 ### Accounts and owners
 
