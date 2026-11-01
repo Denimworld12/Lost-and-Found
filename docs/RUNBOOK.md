@@ -412,7 +412,7 @@ Its signing secret is in `CLERK_WEBHOOK_SIGNING_SECRET` (production). A test `us
 - Subgraph: the captain published `lost-and-found` v0.0.1 to Subgraph Studio on 4 Oct 2026 (indexes
   `sepolia-v1`; `items`, `itemEvents`, `stats`, `config`), and its query URL was added to production and
   redeployed. `apps/web/src/lib/graph.ts` queries it first and falls back to reading the contract when it errors
-  or is more than 50 blocks behind; `NEXT_PUBLIC_SUBGRAPH_URL` also adds its origin to the CSP.
+  or lags (rules in `docs/DECISIONS.md`, 2026-11-02); `NEXT_PUBLIC_SUBGRAPH_URL` also adds its origin to the CSP.
 
 ### Accounts and owners
 

@@ -317,7 +317,7 @@ type Stats @entity(immutable: false) {
 - [x] Copy `subgraph.yaml` to a staging variant pointing at the staging contract
 - [x] Deploy: `graph codegen && graph build && graph auth <DEPLOY_KEY> && graph deploy campus-lost-found` (version label `v0.1.0`, bump each deploy) — published by the human as `lost-and-found` v0.0.1 on 4 Oct 2026 (see `docs/RUNBOOK.md`)
 - [x] Copy the Studio query URL into `NEXT_PUBLIC_SUBGRAPH_URL`
-- [x] `apps/web/src/lib/graph.ts` queries the subgraph first and falls back to the contract on error or more than 50 blocks of lag (see `docs/DECISIONS.md`, 2026-11-02)
+- [x] `apps/web/src/lib/graph.ts` queries the subgraph first and falls back to the contract on error or lag (see `docs/DECISIONS.md`, 2026-11-02)
 
 **Done when:** querying `{ items(first: 5) { id status reward } }` in Studio returns the items created in Phase 4.
 
