@@ -1,13 +1,15 @@
 import type { Item, ItemStatus } from "@milgaya/shared";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getAddress } from "viem";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const chain = vi.hoisted(() => ({
   items: [] as Item[],
   requested: [] as bigint[][],
+  head: 1_000n,
 }));
 
 vi.mock("../contract", () => ({
-  getPublicClient: () => ({}),
+  getPublicClient: () => ({ getBlockNumber: async () => chain.head }),
   readItemCount: async () => BigInt(chain.items.length),
   readItems: async (ids: readonly bigint[]) => {
     chain.requested.push([...ids]);
@@ -20,9 +22,11 @@ const {
   CHAIN_FALLBACK_LIMIT,
   getItem,
   getItems,
+  getItemHistory,
   getItemsByUser,
   getStats,
   getUserHistory,
+  SUBGRAPH_PAGE_SIZE,
   toItemEvent,
 } = await import("../graph");
 const { scanEvents } = await import("../contract");
@@ -52,6 +56,9 @@ function makeItem(
 
 beforeEach(() => {
   chain.requested = [];
+  chain.head = 1_000n;
+  // Local development: no subgraph, so every query reads the contract.
+  vi.stubEnv("NEXT_PUBLIC_SUBGRAPH_URL", "");
   chain.items = [
     makeItem(1, "Completed", 10n, FINDER),
     makeItem(2, "Open", 30n),
@@ -228,5 +235,276 @@ describe("getUserHistory", () => {
       { kind: "Withdrawn", itemId: null, amount: 15n },
       { kind: "Confirmed", itemId: 4n, actor: FINDER, amount: 15n },
     ]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────── Subgraph
+
+const SUBGRAPH_URL =
+  "https://api.studio.thegraph.com/query/1/lost-and-found/v0.0.1";
+const TX = `0x${"ab".repeat(32)}` as const;
+
+function rawItem(
+  id: number,
+  status: ItemStatus,
+  reward: string,
+  finder?: string,
+) {
+  return {
+    itemId: String(id),
+    owner: OWNER,
+    finder: finder ?? null,
+    reward,
+    stake: finder ? "5" : "0",
+    metadataCID: `cid-${id}`,
+    status,
+    createdAt: String(1_000 + id),
+    claimedAt: finder ? "2000" : null,
+    claimWindow: finder ? "259200" : "0",
+  };
+}
+
+interface GraphRequest {
+  query: string;
+  variables: Record<string, unknown>;
+}
+
+function mockSubgraph(
+  respond: (request: GraphRequest) => unknown,
+  indexedBlock = 1_000,
+) {
+  const requests: GraphRequest[] = [];
+  const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+    expect(url).toBe(SUBGRAPH_URL);
+    const request = JSON.parse(String(init.body)) as GraphRequest;
+    requests.push(request);
+    const data = respond(request);
+    return new Response(
+      JSON.stringify(
+        data instanceof Error
+          ? { errors: [{ message: data.message }] }
+          : {
+              data: {
+                ...(data as object),
+                _meta: { block: { number: indexedBlock } },
+              },
+            },
+      ),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return { requests, fetchMock };
+}
+
+describe("with a subgraph", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUBGRAPH_URL", SUBGRAPH_URL);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("getItems reads a page from the subgraph with the status filter", async () => {
+    const { requests } = mockSubgraph(() => ({
+      items: [
+        rawItem(7, "Completed", "40", FINDER),
+        rawItem(5, "Completed", "40", FINDER),
+      ],
+      stats: { itemsPosted: "9" },
+    }));
+    const page = await getItems({ status: "Completed", sort: "reward" });
+    expect(requests[0].variables).toMatchObject({
+      where: { status: "Completed" },
+      orderBy: "reward",
+      skip: 0,
+    });
+    expect(page).toMatchObject({
+      source: "subgraph",
+      totalPosted: 9n,
+      nextCursor: null,
+    });
+    expect(page.items.map((item) => item.id)).toEqual([7n, 5n]);
+    expect(page.items[0]).toEqual({
+      id: 7n,
+      owner: getAddress(OWNER),
+      status: "Completed",
+      createdAt: 1_007n,
+      finder: getAddress(FINDER),
+      claimedAt: 2_000n,
+      claimWindow: 259_200n,
+      reward: 40n,
+      stake: 5n,
+      metadataCID: "cid-7",
+    });
+    expect(chain.requested).toEqual([]);
+  });
+
+  it("getItems pages with a cursor", async () => {
+    const { requests } = mockSubgraph(() => ({
+      items: Array.from({ length: SUBGRAPH_PAGE_SIZE }, (_, index) =>
+        rawItem(300 - index, "Open", "1"),
+      ),
+      stats: { itemsPosted: "300" },
+    }));
+    const first = await getItems();
+    expect(requests[0].variables).toMatchObject({
+      where: {},
+      orderBy: "itemId",
+    });
+    expect(first.nextCursor).toBe(String(SUBGRAPH_PAGE_SIZE));
+    await getItems({}, first.nextCursor);
+    expect(requests[1].variables.skip).toBe(SUBGRAPH_PAGE_SIZE);
+  });
+
+  it("falls back to the chain when the subgraph errors", async () => {
+    mockSubgraph(() => new Error("indexing error"));
+    const page = await getItems();
+    expect(page.source).toBe("chain");
+    expect(page.items.map((item) => item.id)).toEqual([4n, 3n, 2n, 1n]);
+  });
+
+  it("falls back to the chain when the subgraph can't be reached", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      }),
+    );
+    expect((await getStats()).source).toBe("chain");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("bad gateway", { status: 502 })),
+    );
+    expect((await getItemsByUser(OWNER)).source).toBe("chain");
+  });
+
+  it("falls back to the chain when the subgraph is more than 50 blocks behind", async () => {
+    chain.head = 1_051n;
+    mockSubgraph(() => ({ items: [], stats: null }), 1_000);
+    expect((await getItems()).source).toBe("chain");
+
+    chain.head = 1_050n;
+    expect((await getItems()).source).toBe("subgraph");
+  });
+
+  it("getItem uses the subgraph, and the chain for items it hasn't indexed", async () => {
+    mockSubgraph(({ variables }) => ({
+      item: variables.id === "2" ? rawItem(2, "Claimed", "30", FINDER) : null,
+    }));
+    expect((await getItem(2n))?.status).toBe("Claimed");
+    expect(chain.requested).toEqual([]);
+    expect((await getItem(3n))?.status).toBe("Open");
+    expect(chain.requested).toEqual([[3n]]);
+  });
+
+  it("getItemsByUser queries owner and finder by lowercase address", async () => {
+    const { requests } = mockSubgraph(() => ({
+      lost: [rawItem(2, "Open", "30")],
+      found: [rawItem(1, "Completed", "10", FINDER)],
+    }));
+    const mine = await getItemsByUser(
+      "0x00000000000000000000000000000000000000BB",
+    );
+    expect(requests[0].variables.user).toBe(FINDER);
+    expect(mine.source).toBe("subgraph");
+    expect(mine.lost.map((item) => item.id)).toEqual([2n]);
+    expect(mine.found.map((item) => item.id)).toEqual([1n]);
+  });
+
+  it("getStats returns the subgraph's exact totals", async () => {
+    mockSubgraph(() => ({
+      stats: {
+        itemsPosted: "120",
+        itemsReturned: "40",
+        totalRewardsPaid: "123456789012345678901",
+        openItems: "70",
+      },
+    }));
+    expect(await getStats()).toEqual({
+      itemsPosted: 120n,
+      itemsReturned: 40n,
+      totalRewardsPaid: 123_456_789_012_345_678_901n,
+      openItems: 70n,
+      source: "subgraph",
+      partial: false,
+    });
+  });
+
+  it("getStats is all zeros before anything is posted", async () => {
+    mockSubgraph(() => ({ stats: null }));
+    expect(await getStats()).toMatchObject({
+      itemsPosted: 0n,
+      openItems: 0n,
+      source: "subgraph",
+    });
+  });
+
+  it("getItemHistory maps ItemEvents and doesn't scan logs", async () => {
+    mockSubgraph(() => ({
+      itemEvents: [
+        {
+          kind: "Resolved",
+          actor: FINDER,
+          amount: null,
+          finderWins: true,
+          txHash: TX,
+          timestamp: "30",
+        },
+        {
+          kind: "Posted",
+          actor: OWNER,
+          amount: "10",
+          finderWins: null,
+          txHash: TX,
+          timestamp: "10",
+        },
+      ],
+    }));
+    const scan = vi.mocked(scanEvents);
+    scan.mockClear();
+    const history = await getItemHistory(1n);
+    expect(scan).not.toHaveBeenCalled();
+    expect(history.complete).toBe(true);
+    expect(history.events).toEqual([
+      {
+        kind: "Resolved",
+        actor: getAddress(FINDER),
+        amount: null,
+        finderWins: true,
+        txHash: TX,
+        timestamp: 30n,
+      },
+      {
+        kind: "Posted",
+        actor: getAddress(OWNER),
+        amount: 10n,
+        finderWins: undefined,
+        txHash: TX,
+        timestamp: 10n,
+      },
+    ]);
+  });
+
+  it("getItemHistory scans logs when the subgraph has no events for the item", async () => {
+    mockSubgraph(() => ({ itemEvents: [] }));
+    vi.mocked(scanEvents).mockResolvedValueOnce({
+      events: [],
+      complete: false,
+    });
+    expect(await getItemHistory(9n)).toEqual({ events: [], complete: false });
+  });
+});
+
+describe("without a subgraph", () => {
+  it("never calls fetch", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await getItems()).source).toBe("chain");
+    expect((await getStats()).source).toBe("chain");
+    expect((await getItemsByUser(OWNER)).source).toBe("chain");
+    expect((await getItem(1n))?.id).toBe(1n);
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });

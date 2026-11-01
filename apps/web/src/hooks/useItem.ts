@@ -14,7 +14,7 @@ export function useItem(id: bigint, initialItem?: Item) {
   });
 }
 
-/** The item's event history from contract logs (best effort until the subgraph exists). */
+/** The item's event history (subgraph, or contract logs as a best-effort fallback). */
 export function useItemHistory(id: bigint, status?: string) {
   return useQuery({
     // Status in the key refetches the history when the item changes state.
